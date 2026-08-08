@@ -34,68 +34,68 @@ public class SentryConfig {
                 return null;
             }
 
-            @Override
-            public void send(SentryEnvelope envelope, Hint hint) {
-                try {
-                    URL url = requestDetails.getUrl();
-                    String urlString =
-                            url.toString().replace("/envelope/", "/store/").replace("/envelope", "/store/");
+        @Override
+        public void send(SentryEnvelope envelope, Hint hint) {
+            try {
+                URL url = requestDetails.getUrl();
+                String urlString =
+                        url.toString().replace("/envelope/", "/store/").replace("/envelope", "/store/");
 
-                    for (SentryEnvelopeItem item : envelope.getItems()) {
-                        try {
-                            byte[] data = item.getData();
-                            if (data != null && data.length > 0) {
-                                sendJson(urlString, requestDetails.getHeaders(), data);
-                            }
-                        } catch (Exception e) {
-                            log.warn("Failed to send Sentry item: {}", e.getMessage());
+                for (SentryEnvelopeItem item : envelope.getItems()) {
+                    try {
+                        byte[] data = item.getData();
+                        if (data != null && data.length > 0) {
+                            sendJson(urlString, requestDetails.getHeaders(), data);
                         }
+                    } catch (Exception e) {
+                        log.warn("Failed to send Sentry item: {}", e.getMessage());
                     }
-                } catch (Exception e) {
-                    log.error("Failed to send Sentry envelope", e);
                 }
-            }
-
-            private void sendJson(String urlString, Map<String, String> headers, byte[] data) {
-                try {
-                    HttpURLConnection conn =
-                            (HttpURLConnection) new URI(urlString).toURL().openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setDoOutput(true);
-                    conn.setConnectTimeout(5000);
-                    conn.setReadTimeout(5000);
-
-                    if (headers != null) {
-                        headers.forEach(conn::setRequestProperty);
-                    }
-                    conn.setRequestProperty("Content-Type", "application/json");
-
-                    try (OutputStream os = conn.getOutputStream()) {
-                        os.write(data);
-                    }
-
-                    int code = conn.getResponseCode();
-                    if (code >= 200 && code < 300) {
-                        log.info("Successfully sent event to Sentry server, response: {}", code);
-                    } else {
-                        log.warn("Sentry server returned HTTP code: {} for URL: {}", code, urlString);
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to POST Sentry event to {}: {}", urlString, e.getMessage());
-                }
-            }
-
-            @Override
-            public void flush(long timeoutMillis) {
-            }
-
-            @Override
-            public void close(boolean isRestarting) {
-            }
-
-            @Override
-            public void close() {
-                close(false);
+            } catch (Exception e) {
+                log.error("Failed to send Sentry envelope", e);
             }
         }
+
+        private void sendJson(String urlString, Map<String, String> headers, byte[] data) {
+            try {
+                HttpURLConnection conn =
+                        (HttpURLConnection) new URI(urlString).toURL().openConnection();
+                conn.setRequestMethod("POST");
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+
+                if (headers != null) {
+                    headers.forEach(conn::setRequestProperty);
+                }
+                conn.setRequestProperty("Content-Type", "application/json");
+
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(data);
+                }
+
+                int code = conn.getResponseCode();
+                if (code >= 200 && code < 300) {
+                    log.info("Successfully sent event to Sentry server, response: {}", code);
+                } else {
+                    log.warn("Sentry server returned HTTP code: {} for URL: {}", code, urlString);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to POST Sentry event to {}: {}", urlString, e.getMessage());
+            }
+        }
+
+        @Override
+        public void flush(long timeoutMillis) {
+        }
+
+        @Override
+        public void close(boolean isRestarting) {
+        }
+
+        @Override
+        public void close() {
+            close(false);
+        }
+    }
 }
