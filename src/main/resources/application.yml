@@ -112,3 +112,8 @@ logging:
         SQL: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] %-5level %logger{36} - %msg%n"
+
+sentry:
+  dsn: "${SENTRY_DSN:http://key@localhost:9000/1}"
+  traces-sample-rate: 1.0
+  exception-resolver-order: -2147483647

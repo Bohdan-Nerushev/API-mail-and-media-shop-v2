@@ -98,8 +98,8 @@ services:
       - monitoring
     entrypoint: >
       sh -c " apk add --no-cache bash curl jq postgresql-client && bash /scripts/2_keycloak_api_setup.sh "
-    # Shop database
-  shop_db:
+  # Shop database
+  shop-db:
     image: postgres:${POSTGRES_IMAGE_VERSION}
     container_name: ${SHOP_DB_CONTAINER_NAME}
     healthcheck:
@@ -129,10 +129,10 @@ services:
       - -c
       - log_filename=shop_db.log
 
-  # Redis cache
-  redis:
+  # Shop Redis cache
+  shop-redis:
     image: redis:7.0-alpine
-    container_name: redis_cache
+    container_name: ${SHOP_REDIS_CONTAINER_NAME}
     ports:
       - "${REDIS_PORT}:6379"
     networks:
@@ -152,11 +152,11 @@ services:
     image: sonarqube:${SONAR_IMAGE_VERSION}
     container_name: ${SONAR_CONTAINER_NAME}
     depends_on:
-      - sonarqube_db
+      - sonarqube-db
     ports:
       - "${SONAR_PORT}:9000"
     environment:
-      SONAR_JDBC_URL: jdbc:postgresql://${SONAR_DB_CONTAINER_NAME}:5432/${SONAR_DB_NAME}
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/${SONAR_DB_NAME}
       SONAR_JDBC_USERNAME: ${SONAR_DB_USER}
       SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD}
       SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
@@ -166,7 +166,7 @@ services:
       - sonarqube_logs:/opt/sonarqube/logs
 
   # SonarQube database
-  sonarqube_db:
+  sonarqube-db:
     image: postgres:${SONAR_DB_IMAGE_VERSION}
     container_name: ${SONAR_DB_CONTAINER_NAME}
     environment:
@@ -175,6 +175,7 @@ services:
       POSTGRES_DB: ${SONAR_DB_NAME}
     volumes:
       - sonarqube_postgres_data:/var/lib/postgresql/data
+
   # Spring Boot application
   app:
     build:
@@ -191,11 +192,11 @@ services:
       - ./logs:/app/logs
       - ./certs/truststore.jks:/app/certs/truststore.jks:ro
     depends_on:
-      shop_db:
+      shop-db:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-      redis:
+      shop-redis:
         condition: service_healthy
       keycloak-setup:
         condition: service_completed_successfully
@@ -206,13 +207,14 @@ services:
       retries: 10
       start_period: 60s
     environment:
-      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_HOST: shop-redis
       SPRING_DATA_REDIS_PORT: 6379
-      SPRING_DATASOURCE_URL: jdbc:postgresql://shop_db:5432/${SHOP_DB_NAME}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://shop-db:5432/${SHOP_DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${SHOP_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${SHOP_DB_PASSWORD}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: https://keycloak:8443/realms/${KC_REALM}
       JDK_JAVA_OPTIONS: "-Djavax.net.ssl.trustStore=/app/certs/truststore.jks -Djavax.net.ssl.trustStorePassword=${TRUSTSTORE_PASSWORD}"
+
 
   prometheus:
     image: prom/prometheus:v2.53.0
@@ -306,7 +308,7 @@ services:
     container_name: postgres-exporter-shop
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: postgresql://${SHOP_DB_USER}:${SHOP_DB_PASSWORD}@shop_db:5432/${SHOP_DB_NAME}?sslmode=disable
+      DATA_SOURCE_NAME: postgresql://${SHOP_DB_USER}:${SHOP_DB_PASSWORD}@shop-db:5432/${SHOP_DB_NAME}?sslmode=disable
       PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yml
     ports:
       - "${POSTGRES_EXPORTER_SHOP_PORT}:9187"
@@ -315,7 +317,7 @@ services:
     networks:
       - monitoring
     depends_on:
-      shop_db:
+      shop-db:
         condition: service_healthy
 
   postgres-exporter-keycloak:
@@ -340,14 +342,15 @@ services:
     container_name: redis-exporter
     restart: unless-stopped
     environment:
-      REDIS_ADDR: redis://redis_cache:6379
+      REDIS_ADDR: redis://shop-redis:6379
     ports:
       - "${REDIS_EXPORTER_PORT}:9121"
     networks:
       - monitoring
     depends_on:
-      redis:
+      shop-redis:
         condition: service_healthy
+
 
   logstash:
     image: docker.elastic.co/logstash/logstash:${LOGSTASH_IMAGE_VERSION}
@@ -447,6 +450,66 @@ services:
     networks:
       - elk-mail-and-media-shop-v2
 
+  # Sentry database (PostgreSQL)
+  sentry-db:
+    image: postgres:15-alpine
+    container_name: ${SENTRY_DB_CONTAINER_NAME:-sentry-db}
+    environment:
+      POSTGRES_DB: ${SENTRY_DB_NAME:-sentry}
+      POSTGRES_USER: ${SENTRY_DB_USER:-sentry}
+      POSTGRES_PASSWORD: ${SENTRY_DB_PASSWORD:-sentry}
+    ports:
+      - "${SENTRY_DB_PORT:-5436}:5432"
+    networks:
+      - monitoring
+    volumes:
+      - sentry_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${SENTRY_DB_USER:-sentry} -d ${SENTRY_DB_NAME:-sentry}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Sentry Redis
+  sentry-redis:
+    image: redis:7.0-alpine
+    container_name: ${SENTRY_REDIS_CONTAINER_NAME:-sentry-redis}
+    ports:
+      - "${SENTRY_REDIS_PORT:-6380}:6379"
+    networks:
+      - monitoring
+    volumes:
+      - sentry_redis_data:/data
+    command: [ "redis-server", "--appendonly", "yes" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Sentry server
+  sentry:
+    image: sentry:9.1.2
+    container_name: ${SENTRY_CONTAINER_NAME:-sentry}
+    restart: unless-stopped
+    environment:
+      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-secret-sentry-key-v9}"
+      SENTRY_POSTGRES_HOST: sentry-db
+      SENTRY_DB_NAME: "${SENTRY_DB_NAME:-sentry}"
+      SENTRY_DB_USER: "${SENTRY_DB_USER:-sentry}"
+      SENTRY_DB_PASSWORD: "${SENTRY_DB_PASSWORD:-sentry}"
+      SENTRY_REDIS_HOST: sentry-redis
+      SENTRY_URL_PREFIX: "http://localhost:9000"
+    ports:
+      - "${SENTRY_PORT:-9000}:9000"
+    networks:
+      - monitoring
+    depends_on:
+      sentry-db:
+        condition: service_healthy
+      sentry-redis:
+        condition: service_healthy
+
 volumes:
   shop_db_data:
   sonarqube_data:
@@ -460,9 +523,13 @@ volumes:
   loki_data:
   elastic_search_data:
   logstash_data:
+  sentry_db_data:
+  sentry_redis_data:
 
 networks:
   monitoring:
     driver: bridge
   elk-mail-and-media-shop-v2:
     driver: bridge
+
+
