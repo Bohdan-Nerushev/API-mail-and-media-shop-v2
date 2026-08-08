@@ -114,6 +114,6 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] %-5level %logger{36} - %msg%n"
 
 sentry:
-  dsn: "${SENTRY_DSN:http://key@localhost:9000/1}"
+  dsn: "${SENTRY_DSN:http://091f6c3f8581455ea631a7435eae3cc7@localhost:9001/1}"
   traces-sample-rate: 1.0
   exception-resolver-order: -2147483647

@@ -1,5 +1,7 @@
 package dev.mam.buizsol.mamshop.customer.mapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import dev.mam.buizsol.mamshop.customer.dto.AddressRequestDTO;
 import dev.mam.buizsol.mamshop.customer.dto.AddressResponseDTO;
 import dev.mam.buizsol.mamshop.customer.dto.CommunicationDetailsRequestDTO;
@@ -11,14 +13,11 @@ import dev.mam.buizsol.mamshop.customer.model.Brand;
 import dev.mam.buizsol.mamshop.customer.model.CommunicationDetails;
 import dev.mam.buizsol.mamshop.customer.model.Customer;
 import dev.mam.buizsol.mamshop.customer.model.CustomerStatus;
+import java.time.LocalDate;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.time.LocalDate;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class CustomerMapperTest {
 

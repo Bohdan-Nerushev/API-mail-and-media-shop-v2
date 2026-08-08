@@ -185,7 +185,8 @@ services:
     container_name: ${APP_CONTAINER_NAME}
     restart: always
     ports:
-      - "${APP_PORT:-8090}:8090"
+      - "${APP_PORT}:8090"
+
     networks:
       - monitoring
     volumes:
@@ -262,8 +263,9 @@ services:
     ports:
       - "${GRAFANA_PORT}:3000"
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
     volumes:
@@ -453,19 +455,19 @@ services:
   # Sentry database (PostgreSQL)
   sentry-db:
     image: postgres:15-alpine
-    container_name: ${SENTRY_DB_CONTAINER_NAME:-sentry-db}
+    container_name: ${SENTRY_DB_CONTAINER_NAME}
     environment:
-      POSTGRES_DB: ${SENTRY_DB_NAME:-sentry}
-      POSTGRES_USER: ${SENTRY_DB_USER:-sentry}
-      POSTGRES_PASSWORD: ${SENTRY_DB_PASSWORD:-sentry}
+      POSTGRES_DB: ${SENTRY_DB_NAME}
+      POSTGRES_USER: ${SENTRY_DB_USER}
+      POSTGRES_PASSWORD: ${SENTRY_DB_PASSWORD}
     ports:
-      - "${SENTRY_DB_PORT:-5436}:5432"
+      - "${SENTRY_DB_PORT}:5432"
     networks:
       - monitoring
     volumes:
       - sentry_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${SENTRY_DB_USER:-sentry} -d ${SENTRY_DB_NAME:-sentry}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${SENTRY_DB_USER} -d ${SENTRY_DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -473,9 +475,9 @@ services:
   # Sentry Redis
   sentry-redis:
     image: redis:7.0-alpine
-    container_name: ${SENTRY_REDIS_CONTAINER_NAME:-sentry-redis}
+    container_name: ${SENTRY_REDIS_CONTAINER_NAME}
     ports:
-      - "${SENTRY_REDIS_PORT:-6380}:6379"
+      - "${SENTRY_REDIS_PORT}:6379"
     networks:
       - monitoring
     volumes:
@@ -487,21 +489,28 @@ services:
       timeout: 5s
       retries: 5
 
-  # Sentry server
-  sentry:
-    image: sentry:9.1.2
-    container_name: ${SENTRY_CONTAINER_NAME:-sentry}
-    restart: unless-stopped
+  # Sentry automated setup & DB migration
+  sentry-setup:
+    image: sentry:${SENTRY_IMAGE_VERSION}
+    container_name: sentry-setup
     environment:
-      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-secret-sentry-key-v9}"
+      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
       SENTRY_POSTGRES_HOST: sentry-db
-      SENTRY_DB_NAME: "${SENTRY_DB_NAME:-sentry}"
-      SENTRY_DB_USER: "${SENTRY_DB_USER:-sentry}"
-      SENTRY_DB_PASSWORD: "${SENTRY_DB_PASSWORD:-sentry}"
+      SENTRY_DB_NAME: ${SENTRY_DB_NAME}
+      SENTRY_DB_USER: ${SENTRY_DB_USER}
+      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD}
       SENTRY_REDIS_HOST: sentry-redis
-      SENTRY_URL_PREFIX: "http://localhost:9000"
-    ports:
-      - "${SENTRY_PORT:-9000}:9000"
+      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX}
+      SENTRY_ADMIN_EMAIL: ${SENTRY_ADMIN_EMAIL}
+      SENTRY_ADMIN_PASSWORD: ${SENTRY_ADMIN_PASSWORD}
+    entrypoint:
+      - sh
+      - -c
+      - |
+        echo 'Running Sentry upgrade and migrations...'
+        sentry upgrade --noinput
+        sentry createuser --email $${SENTRY_ADMIN_EMAIL} --password $${SENTRY_ADMIN_PASSWORD} --superuser --no-input || sentry exec -c "from sentry.models import User; u = User.objects.get(email='$${SENTRY_ADMIN_EMAIL}'); u.set_password('$${SENTRY_ADMIN_PASSWORD}'); u.save()"
+        echo 'Sentry setup completed!'
     networks:
       - monitoring
     depends_on:
@@ -510,7 +519,83 @@ services:
       sentry-redis:
         condition: service_healthy
 
+  # Sentry server
+  sentry:
+    image: sentry:${SENTRY_IMAGE_VERSION}
+    container_name: ${SENTRY_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+      SENTRY_POSTGRES_HOST: sentry-db
+      SENTRY_DB_NAME: ${SENTRY_DB_NAME}
+      SENTRY_DB_USER: ${SENTRY_DB_USER}
+      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD}
+      SENTRY_REDIS_HOST: sentry-redis
+      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX}
+    ports:
+      - "${SENTRY_PORT}:9000"
+    networks:
+      - monitoring
+    depends_on:
+      sentry-db:
+        condition: service_healthy
+      sentry-redis:
+        condition: service_healthy
+      sentry-setup:
+        condition: service_completed_successfully
+
+  # Sentry background worker (Celery)
+  sentry-worker:
+    image: sentry:${SENTRY_IMAGE_VERSION}
+    container_name: sentry-worker
+    restart: unless-stopped
+    command: [ "sentry", "run", "worker" ]
+    environment:
+      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+      SENTRY_POSTGRES_HOST: sentry-db
+      SENTRY_DB_NAME: ${SENTRY_DB_NAME}
+      SENTRY_DB_USER: ${SENTRY_DB_USER}
+      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD}
+      SENTRY_REDIS_HOST: sentry-redis
+      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX}
+    networks:
+      - monitoring
+    depends_on:
+      sentry-db:
+        condition: service_healthy
+      sentry-redis:
+        condition: service_healthy
+      sentry-setup:
+        condition: service_completed_successfully
+
+  # Sentry cron scheduler
+  sentry-cron:
+    image: sentry:${SENTRY_IMAGE_VERSION}
+    container_name: sentry-cron
+    restart: unless-stopped
+    command: [ "sentry", "run", "cron" ]
+    environment:
+      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+      SENTRY_POSTGRES_HOST: sentry-db
+      SENTRY_DB_NAME: ${SENTRY_DB_NAME}
+      SENTRY_DB_USER: ${SENTRY_DB_USER}
+      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD}
+      SENTRY_REDIS_HOST: sentry-redis
+      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX}
+    networks:
+      - monitoring
+    depends_on:
+      sentry-db:
+        condition: service_healthy
+      sentry-redis:
+        condition: service_healthy
+      sentry-setup:
+        condition: service_completed_successfully
+
+
+
 volumes:
+
   shop_db_data:
   sonarqube_data:
   sonarqube_extensions:

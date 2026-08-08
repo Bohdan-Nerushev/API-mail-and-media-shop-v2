@@ -13,5 +13,4 @@ public record CommunicationDetailsRequestDTO(
         String email,
 
         @NotBlank(message = "Telephone is mandatory") @Size(min = 5, max = 30)
-        String telephone) {
-}
+        String telephone) {}

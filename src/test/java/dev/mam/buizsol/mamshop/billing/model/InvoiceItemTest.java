@@ -1,17 +1,16 @@
 package dev.mam.buizsol.mamshop.billing.model;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
 import dev.mam.buizsol.mamshop.contract.model.Contract;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
 @DisplayName("InvoiceItem Tests")
 class InvoiceItemTest {

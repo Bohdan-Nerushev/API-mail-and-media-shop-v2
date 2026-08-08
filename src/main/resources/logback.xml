@@ -22,10 +22,16 @@
         </encoder>
     </appender>
 
+    <!-- Appender for Sentry -->
+    <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
+        <minimumEventLevel>WARN</minimumEventLevel>
+    </appender>
+
     <!-- Root logging level -->
     <root level="info">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
+        <appender-ref ref="SENTRY"/>
     </root>
 
 </configuration>

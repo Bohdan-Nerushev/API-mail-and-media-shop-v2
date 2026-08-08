@@ -19,10 +19,12 @@ Built with **Spring Boot** and documented via **Springdoc OpenAPI (Swagger UI)**
 
 - [Monitoring & Observability](#monitoring--observability)
   - [Monitoring Components](#monitoring-components)
+  - [Sentry Error Tracking](#sentry-error-tracking)
   - [ELK Stack (Structured Log Pipeline)](#elk-stack-structured-log-pipeline)
   - [Log Persistence](#log-persistence)
   - [How to Visualize](#how-to-visualize)
   - [ELK Operations](#elk-operations)
+
 
 - [Testing](#testing)
 
@@ -848,7 +850,22 @@ The application exposes management endpoints via Spring Boot Actuator for deep i
 
 ---
 
+### Sentry Error Tracking
+
+**Web UI URL:** [http://localhost:9001](http://localhost:9001)
+
+
+Sentry provides real-time error tracking and APM monitoring for the application.
+
+#### Architecture & Infrastructure Services
+- **Sentry Server:** Self-hosted Sentry instance running `sentry:9.1.2` (container name `sentry`).
+- **Sentry Database (`sentry-db`):** Dedicated PostgreSQL instance for Sentry data (`postgres:15-alpine` on host port `5436`).
+- **Sentry Redis (`sentry-redis`):** Dedicated Redis cache instance for Sentry queue & caching (`redis:7.0-alpine` on host port `6380`).
+
+---
+
 ### ELK Stack (Structured Log Pipeline)
+
 
 The ELK stack provides a centralized, structured logging pipeline for all infrastructure services.
 All logs are written to the shared host directory `./logs/` and ingested by Logstash.

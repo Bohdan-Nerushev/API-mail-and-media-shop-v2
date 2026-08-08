@@ -3,9 +3,8 @@ package dev.mam.buizsol.mamshop.billing.validation;
 import jakarta.annotation.Nullable;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import org.springframework.beans.factory.annotation.Value;
-
 import java.math.BigDecimal;
+import org.springframework.beans.factory.annotation.Value;
 
 public class InvoiceDiscountValidator implements ConstraintValidator<InvoiceDiscount, BigDecimal> {
 
