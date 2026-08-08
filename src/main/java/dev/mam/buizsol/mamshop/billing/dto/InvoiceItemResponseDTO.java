@@ -10,4 +10,5 @@ public record InvoiceItemResponseDTO(
         UUID contractId,
         LocalDate contractCreationDate,
         BigDecimal setupFee,
-        BigDecimal monthlyFee) {}
+        BigDecimal monthlyFee) {
+}

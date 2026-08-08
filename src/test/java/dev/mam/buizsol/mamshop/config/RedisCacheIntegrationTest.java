@@ -1,19 +1,10 @@
 package dev.mam.buizsol.mamshop.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import dev.mam.buizsol.mamshop.customer.model.Brand;
 import dev.mam.buizsol.mamshop.product.model.MailProduct;
 import dev.mam.buizsol.mamshop.product.model.Product;
 import dev.mam.buizsol.mamshop.product.service.ProductRepository;
 import dev.mam.buizsol.mamshop.product.service.ProductService;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,12 +19,22 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import redis.clients.jedis.Jedis;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 @SpringBootTest(
         properties = {
-            "spring.cache.type=redis",
-            "spring.data.redis.host=${REDIS_HOST:localhost}",
-            "spring.data.redis.port=6379",
-            "billing.minimal-discount-amount=0.10"
+                "spring.cache.type=redis",
+                "spring.data.redis.host=${REDIS_HOST:localhost}",
+                "spring.data.redis.port=6379",
+                "billing.minimal-discount-amount=0.10"
         })
 class RedisCacheIntegrationTest {
 

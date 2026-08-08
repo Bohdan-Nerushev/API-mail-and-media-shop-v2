@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
+
 import java.time.LocalDate;
 
 public record CustomerRequestDTO(
@@ -16,4 +17,5 @@ public record CustomerRequestDTO(
         @NotNull @Valid AddressRequestDTO address,
         @Nullable @Valid AddressRequestDTO invoiceAddress,
         @NotNull @Valid CommunicationDetailsRequestDTO communicationDetails,
-        @NotNull Brand brand) {}
+        @NotNull Brand brand) {
+}

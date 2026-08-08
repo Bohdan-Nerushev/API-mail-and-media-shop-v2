@@ -1,24 +1,25 @@
 package dev.mam.buizsol.mamshop.product.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import dev.mam.buizsol.mamshop.customer.model.Brand;
 import dev.mam.buizsol.mamshop.product.exception.ProductValidationException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.executable.ExecutableValidator;
-import java.lang.reflect.Constructor;
-import java.math.BigDecimal;
-import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("BundleProduct Tests")
 class BundleProductTest {
@@ -68,8 +69,8 @@ class BundleProductTest {
     @DisplayName("Success: Create BundleProduct and verify summation logic for different brands")
     @ParameterizedTest(name = "[{index}] Brand: {0}, Mail: {1}, Partner: {3}")
     @CsvSource({
-        "GMX, S-Mail, 1.00, P-Cloud, 5.00, 2.00, 9.99, 3.00",
-        "WEB_DE, P-Mail, 10.00, P-Music, 15.00, 5.00, 24.99, 15.00"
+            "GMX, S-Mail, 1.00, P-Cloud, 5.00, 2.00, 9.99, 3.00",
+            "WEB_DE, P-Mail, 10.00, P-Music, 15.00, 5.00, 24.99, 15.00"
     })
     void shouldCreateBundleProductAndCalculateTotalsWhenValidDataProvided(
             final Brand brand,
@@ -134,7 +135,7 @@ class BundleProductTest {
         Constructor<BundleProduct> constructor =
                 BundleProduct.class.getConstructor(MailProduct.class, PartnerProduct.class);
 
-        var violations = executableValidator.validateConstructorParameters(constructor, new Object[] {null, null});
+        var violations = executableValidator.validateConstructorParameters(constructor, new Object[]{null, null});
 
         assertFalse(violations.isEmpty());
         assertEquals(2, violations.size());

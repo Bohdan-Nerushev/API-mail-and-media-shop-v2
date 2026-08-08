@@ -1,10 +1,5 @@
 package dev.mam.buizsol.mamshop.contract.validation;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import dev.mam.buizsol.mamshop.customer.model.Brand;
 import dev.mam.buizsol.mamshop.customer.model.Customer;
 import dev.mam.buizsol.mamshop.product.model.Product;
@@ -14,6 +9,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @DisplayName("BrandMatchValidator Tests")
 class BrandMatchValidatorTest {
@@ -33,14 +33,14 @@ class BrandMatchValidatorTest {
     @DisplayName("Should return true when values are null or insufficient to allow other validators to" + " handle it")
     void shouldReturnTrueWhenValuesAreInvalid() {
         assertTrue(validator.isValid(null, context));
-        assertTrue(validator.isValid(new Object[] {}, context));
-        assertTrue(validator.isValid(new Object[] {new Object()}, context));
+        assertTrue(validator.isValid(new Object[]{}, context));
+        assertTrue(validator.isValid(new Object[]{new Object()}, context));
     }
 
     @Test
     @DisplayName("Should return true when argument types do not match Customer and Product")
     void shouldReturnTrueWhenTypesMismatch() {
-        assertTrue(validator.isValid(new Object[] {"NotACustomer", "NotAProduct"}, context));
+        assertTrue(validator.isValid(new Object[]{"NotACustomer", "NotAProduct"}, context));
     }
 
     @Test
@@ -52,7 +52,7 @@ class BrandMatchValidatorTest {
         when(customer.getBrand()).thenReturn(Brand.GMX);
         when(product.getBrand()).thenReturn(Brand.GMX);
 
-        assertTrue(validator.isValid(new Object[] {customer, product}, context));
+        assertTrue(validator.isValid(new Object[]{customer, product}, context));
     }
 
     @Test
@@ -64,6 +64,6 @@ class BrandMatchValidatorTest {
         when(customer.getBrand()).thenReturn(Brand.GMX);
         when(product.getBrand()).thenReturn(Brand.WEB_DE);
 
-        assertFalse(validator.isValid(new Object[] {customer, product}, context));
+        assertFalse(validator.isValid(new Object[]{customer, product}, context));
     }
 }

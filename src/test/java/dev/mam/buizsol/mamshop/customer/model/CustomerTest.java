@@ -1,5 +1,19 @@
 package dev.mam.buizsol.mamshop.customer.model;
 
+import dev.mam.buizsol.mamshop.customer.exception.CustomerValidationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.time.LocalDate;
+import java.util.Set;
+
 import static dev.mam.buizsol.mamshop.customer.model.CustomerStatus.ACTIVE;
 import static dev.mam.buizsol.mamshop.customer.model.CustomerStatus.INACTIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -7,19 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import dev.mam.buizsol.mamshop.customer.exception.CustomerValidationException;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import java.time.LocalDate;
-import java.util.Set;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 @DisplayName("Customer Record Tests")
 class CustomerTest {
