@@ -84,7 +84,7 @@ fi
 
 
 log_info "Building and starting infrastructure containers..."
-docker compose up -d keycloak-db keycloak shop_db redis || error_exit "Docker Compose infrastructure start failed."
+docker compose up -d keycloak-db keycloak shop-db shop-redis || error_exit "Docker Compose infrastructure start failed."
 
 log_info "Starting keycloak-setup (Keycloak configuration automation)..."
 docker compose up --no-build keycloak-setup || error_exit "Keycloak setup failed."
