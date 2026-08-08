@@ -38,9 +38,11 @@ logging:
     dev.mam.buizsol.mamshop: WARN
 
 sentry:
-  dsn: "${SENTRY_DSN:http://091f6c3f8581455ea631a7435eae3cc7@localhost:9001/1}"
+  dsn: "${SENTRY_DSN}"
   traces-sample-rate: 1.0
   exception-resolver-order: -2147483647
+
+
 
 
 

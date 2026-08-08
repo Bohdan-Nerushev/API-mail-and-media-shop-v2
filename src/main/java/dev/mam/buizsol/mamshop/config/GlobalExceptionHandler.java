@@ -33,9 +33,19 @@ public class GlobalExceptionHandler {
         return Optional.ofNullable(MDC.get("correlationId")).orElse("no-id");
     }
 
+    private void captureSentry(Throwable ex) {
+        log.info("captureSentry called for exception: {}, Sentry.isEnabled: {}", ex.getMessage(), Sentry.isEnabled());
+        Sentry.withScope(scope -> {
+            scope.setTag("correlationId", getCorrelationId());
+            Sentry.captureException(ex);
+        });
+        Sentry.flush(2000);
+    }
+
     @ExceptionHandler(CustomerNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleCustomerNotFoundException(CustomerNotFoundException ex) {
         log.error("Customer not found for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(404)
                 .body(new ErrorResponse(
                         getCorrelationId(), "CUSTOMER_NOT_FOUND", "Customer not found", LocalDateTime.now()));
@@ -44,6 +54,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomerNotActiveException.class)
     public ResponseEntity<ErrorResponse> handleCustomerNotActiveException(CustomerNotActiveException ex) {
         log.error("Customer is not active for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(409)
                 .body(new ErrorResponse(
                         getCorrelationId(), "CUSTOMER_NOT_ACTIVE", "Customer is not active", LocalDateTime.now()));
@@ -52,6 +63,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomerValidationException.class)
     public ResponseEntity<ErrorResponse> handleCustomerValidationException(CustomerValidationException ex) {
         log.error("Customer validation failed for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
@@ -63,6 +75,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleProductNotFoundException(ProductNotFoundException ex) {
         log.error("Product not found for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(404)
                 .body(new ErrorResponse(
                         getCorrelationId(), "PRODUCT_NOT_FOUND", "Product not found", LocalDateTime.now()));
@@ -71,6 +84,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ProductValidationException.class)
     public ResponseEntity<ErrorResponse> handleProductValidationException(ProductValidationException ex) {
         log.error("Product validation failed for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
@@ -82,6 +96,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ContractNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleContractNotFoundException(ContractNotFoundException ex) {
         log.error("Contract not found for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(404)
                 .body(new ErrorResponse(
                         getCorrelationId(), "CONTRACT_NOT_FOUND", "Contract not found", LocalDateTime.now()));
@@ -90,6 +105,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ContractValidationException.class)
     public ResponseEntity<ErrorResponse> handleContractValidationException(ContractValidationException ex) {
         log.error("Contract validation failed for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
@@ -101,6 +117,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BrandMismatchException.class)
     public ResponseEntity<ErrorResponse> handleBrandMismatchException(BrandMismatchException ex) {
         log.error("Brand mismatch for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(422)
                 .body(new ErrorResponse(getCorrelationId(), "BRAND_MISMATCH", "Brand mismatch", LocalDateTime.now()));
     }
@@ -108,6 +125,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidInvoiceDiscountException.class)
     public ResponseEntity<ErrorResponse> handleInvalidInvoiceDiscountException(InvalidInvoiceDiscountException ex) {
         log.error("Invalid invoice discount for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(), "INVALID_DISCOUNT", "Invalid invoice discount", LocalDateTime.now()));
@@ -116,6 +134,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvoiceValidationException.class)
     public ResponseEntity<ErrorResponse> handleInvoiceValidationException(InvoiceValidationException ex) {
         log.error("Invoice validation failed for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
@@ -127,6 +146,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         log.error("Request validation failed for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
@@ -138,6 +158,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException ex) {
         log.error("Request validation failed for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
@@ -149,6 +170,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex) {
         log.error("Constraint violation for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(), "CONSTRAINT_VIOLATION", "Constraint violation", LocalDateTime.now()));
@@ -158,6 +180,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
             MissingServletRequestParameterException ex) {
         log.error("Missing servlet request parameter for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
@@ -170,6 +193,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
             MethodArgumentTypeMismatchException ex) {
         log.error("Type mismatch for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(getCorrelationId(), "TYPE_MISMATCH", "Type mismatch", LocalDateTime.now()));
     }
@@ -177,6 +201,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoResource(NoResourceFoundException ex) {
         log.error("Resource not found for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
         return ResponseEntity.status(404)
                 .body(new ErrorResponse(
                         getCorrelationId(), "RESOURCE_NOT_FOUND", "Resource not found", LocalDateTime.now()));
@@ -185,10 +210,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         log.error("Unhandled exception occurred for correlationId: {}", getCorrelationId(), ex);
-        Sentry.withScope(scope -> {
-            scope.setTag("correlationId", getCorrelationId());
-            Sentry.captureException(ex);
-        });
+        captureSentry(ex);
         return ResponseEntity.status(500)
                 .body(new ErrorResponse(
                         getCorrelationId(), "INTERNAL_ERROR", "An unexpected error occurred", LocalDateTime.now()));

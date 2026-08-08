@@ -214,7 +214,9 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SHOP_DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${SHOP_DB_PASSWORD}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: https://keycloak:8443/realms/${KC_REALM}
+      SENTRY_DSN: ${SENTRY_DSN}
       JDK_JAVA_OPTIONS: "-Djavax.net.ssl.trustStore=/app/certs/truststore.jks -Djavax.net.ssl.trustStorePassword=${TRUSTSTORE_PASSWORD}"
+
 
 
   prometheus:
@@ -474,7 +476,8 @@ services:
 
   # Sentry Redis
   sentry-redis:
-    image: redis:7.0-alpine
+    image: redis:5.0-alpine
+
     container_name: ${SENTRY_REDIS_CONTAINER_NAME}
     ports:
       - "${SENTRY_REDIS_PORT}:6379"
@@ -509,8 +512,33 @@ services:
       - |
         echo 'Running Sentry upgrade and migrations...'
         sentry upgrade --noinput
-        sentry createuser --email $${SENTRY_ADMIN_EMAIL} --password $${SENTRY_ADMIN_PASSWORD} --superuser --no-input || sentry exec -c "from sentry.models import User; u = User.objects.get(email='$${SENTRY_ADMIN_EMAIL}'); u.set_password('$${SENTRY_ADMIN_PASSWORD}'); u.save()"
+        sentry exec -c "
+        from sentry.models import User, Organization, OrganizationMember, Team, Project, ProjectKey
+        email = '$${SENTRY_ADMIN_EMAIL}'
+        password = '$${SENTRY_ADMIN_PASSWORD}'
+        user = User.objects.filter(email=email).first()
+        if not user:
+            user = User.objects.create(email=email, username=email, is_superuser=True, is_staff=True, is_active=True)
+        user.is_superuser = True
+        user.is_staff = True
+        user.set_password(password)
+        user.save()
+
+        org = Organization.objects.first()
+        if not org:
+            org = Organization.objects.create(name='Mail and Media Shop Org', slug='mail-and-media-shop-org')
+
+        OrganizationMember.objects.get_or_create(organization=org, user=user, defaults={'role': 'owner'})
+
+        team = Team.objects.filter(organization=org, slug='devs').first() or Team.objects.create(organization=org, name='devs', slug='devs')
+        p = Project.objects.filter(slug='mail-and-media-shop').first() or Project.objects.create(organization=org, name='mail-and-media-shop', slug='mail-and-media-shop')
+        p.add_team(team)
+
+        if not ProjectKey.objects.filter(project=p).exists():
+            ProjectKey.objects.create(project=p, public_key='07605df1eb7445588d2bf1850d431c89', secret_key='678e68c606304428b7494bd479816f48')
+        "
         echo 'Sentry setup completed!'
+
     networks:
       - monitoring
     depends_on:
@@ -549,7 +577,7 @@ services:
     image: sentry:${SENTRY_IMAGE_VERSION}
     container_name: sentry-worker
     restart: unless-stopped
-    command: [ "sentry", "run", "worker" ]
+    command: [ "sentry", "run", "worker", "-c", "2" ]
     environment:
       SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
       SENTRY_POSTGRES_HOST: sentry-db

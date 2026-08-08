@@ -25,6 +25,7 @@
     <!-- Appender for Sentry -->
     <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
         <minimumEventLevel>WARN</minimumEventLevel>
+        <minimumBreadcrumbLevel>DEBUG</minimumBreadcrumbLevel>
     </appender>
 
     <!-- Root logging level -->
