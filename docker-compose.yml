@@ -457,19 +457,19 @@ services:
   # Sentry database (PostgreSQL)
   sentry-db:
     image: postgres:15-alpine
-    container_name: ${SENTRY_DB_CONTAINER_NAME}
+    container_name: ${SENTRY_DB_CONTAINER_NAME:-sentry-db}
     environment:
-      POSTGRES_DB: ${SENTRY_DB_NAME}
-      POSTGRES_USER: ${SENTRY_DB_USER}
-      POSTGRES_PASSWORD: ${SENTRY_DB_PASSWORD}
+      POSTGRES_DB: ${SENTRY_DB_NAME:-sentry}
+      POSTGRES_USER: ${SENTRY_DB_USER:-sentry}
+      POSTGRES_PASSWORD: ${SENTRY_DB_PASSWORD:-sentry_password}
     ports:
-      - "${SENTRY_DB_PORT}:5432"
+      - "${SENTRY_DB_PORT:-5436}:5432"
     networks:
       - monitoring
     volumes:
       - sentry_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${SENTRY_DB_USER} -d ${SENTRY_DB_NAME}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${SENTRY_DB_USER:-sentry} -d ${SENTRY_DB_NAME:-sentry}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -478,9 +478,9 @@ services:
   sentry-redis:
     image: redis:5.0-alpine
 
-    container_name: ${SENTRY_REDIS_CONTAINER_NAME}
+    container_name: ${SENTRY_REDIS_CONTAINER_NAME:-sentry-redis}
     ports:
-      - "${SENTRY_REDIS_PORT}:6379"
+      - "${SENTRY_REDIS_PORT:-6380}:6379"
     networks:
       - monitoring
     volumes:
@@ -494,18 +494,18 @@ services:
 
   # Sentry automated setup & DB migration
   sentry-setup:
-    image: sentry:${SENTRY_IMAGE_VERSION}
+    image: sentry:${SENTRY_IMAGE_VERSION:-9.1.2}
     container_name: sentry-setup
     environment:
-      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY:-678e68c606304428b7494bd479816f48}
       SENTRY_POSTGRES_HOST: sentry-db
-      SENTRY_DB_NAME: ${SENTRY_DB_NAME}
-      SENTRY_DB_USER: ${SENTRY_DB_USER}
-      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD}
+      SENTRY_DB_NAME: ${SENTRY_DB_NAME:-sentry}
+      SENTRY_DB_USER: ${SENTRY_DB_USER:-sentry}
+      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD:-sentry_password}
       SENTRY_REDIS_HOST: sentry-redis
-      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX}
-      SENTRY_ADMIN_EMAIL: ${SENTRY_ADMIN_EMAIL}
-      SENTRY_ADMIN_PASSWORD: ${SENTRY_ADMIN_PASSWORD}
+      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX:-http://localhost:9001}
+      SENTRY_ADMIN_EMAIL: ${SENTRY_ADMIN_EMAIL:-admin@example.com}
+      SENTRY_ADMIN_PASSWORD: ${SENTRY_ADMIN_PASSWORD:-admin}
     entrypoint:
       - sh
       - -c
@@ -549,19 +549,19 @@ services:
 
   # Sentry server
   sentry:
-    image: sentry:${SENTRY_IMAGE_VERSION}
-    container_name: ${SENTRY_CONTAINER_NAME}
+    image: sentry:${SENTRY_IMAGE_VERSION:-9.1.2}
+    container_name: ${SENTRY_CONTAINER_NAME:-sentry}
     restart: unless-stopped
     environment:
-      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY:-678e68c606304428b7494bd479816f48}
       SENTRY_POSTGRES_HOST: sentry-db
-      SENTRY_DB_NAME: ${SENTRY_DB_NAME}
-      SENTRY_DB_USER: ${SENTRY_DB_USER}
-      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD}
+      SENTRY_DB_NAME: ${SENTRY_DB_NAME:-sentry}
+      SENTRY_DB_USER: ${SENTRY_DB_USER:-sentry}
+      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD:-sentry_password}
       SENTRY_REDIS_HOST: sentry-redis
-      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX}
+      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX:-http://localhost:9001}
     ports:
-      - "${SENTRY_PORT}:9000"
+      - "${SENTRY_PORT:-9001}:9000"
     networks:
       - monitoring
     depends_on:
@@ -574,18 +574,18 @@ services:
 
   # Sentry background worker (Celery)
   sentry-worker:
-    image: sentry:${SENTRY_IMAGE_VERSION}
+    image: sentry:${SENTRY_IMAGE_VERSION:-9.1.2}
     container_name: sentry-worker
     restart: unless-stopped
     command: [ "sentry", "run", "worker", "-c", "2" ]
     environment:
-      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY:-678e68c606304428b7494bd479816f48}
       SENTRY_POSTGRES_HOST: sentry-db
-      SENTRY_DB_NAME: ${SENTRY_DB_NAME}
-      SENTRY_DB_USER: ${SENTRY_DB_USER}
-      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD}
+      SENTRY_DB_NAME: ${SENTRY_DB_NAME:-sentry}
+      SENTRY_DB_USER: ${SENTRY_DB_USER:-sentry}
+      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD:-sentry_password}
       SENTRY_REDIS_HOST: sentry-redis
-      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX}
+      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX:-http://localhost:9001}
     networks:
       - monitoring
     depends_on:
@@ -598,18 +598,18 @@ services:
 
   # Sentry cron scheduler
   sentry-cron:
-    image: sentry:${SENTRY_IMAGE_VERSION}
+    image: sentry:${SENTRY_IMAGE_VERSION:-9.1.2}
     container_name: sentry-cron
     restart: unless-stopped
     command: [ "sentry", "run", "cron" ]
     environment:
-      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+      SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY:-678e68c606304428b7494bd479816f48}
       SENTRY_POSTGRES_HOST: sentry-db
-      SENTRY_DB_NAME: ${SENTRY_DB_NAME}
-      SENTRY_DB_USER: ${SENTRY_DB_USER}
-      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD}
+      SENTRY_DB_NAME: ${SENTRY_DB_NAME:-sentry}
+      SENTRY_DB_USER: ${SENTRY_DB_USER:-sentry}
+      SENTRY_DB_PASSWORD: ${SENTRY_DB_PASSWORD:-sentry_password}
       SENTRY_REDIS_HOST: sentry-redis
-      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX}
+      SENTRY_URL_PREFIX: ${SENTRY_URL_PREFIX:-http://localhost:9001}
     networks:
       - monitoring
     depends_on:
