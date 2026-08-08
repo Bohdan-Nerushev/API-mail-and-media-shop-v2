@@ -1,5 +1,15 @@
 package dev.mam.buizsol.mamshop.customer.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import dev.mam.buizsol.mamshop.customer.exception.CustomerNotFoundException;
 import dev.mam.buizsol.mamshop.customer.model.Address;
 import dev.mam.buizsol.mamshop.customer.model.Brand;
@@ -7,6 +17,10 @@ import dev.mam.buizsol.mamshop.customer.model.CommunicationDetails;
 import dev.mam.buizsol.mamshop.customer.model.Customer;
 import dev.mam.buizsol.mamshop.customer.model.CustomerStatus;
 import jakarta.validation.ConstraintViolationException;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,21 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.validation.beanvalidation.MethodValidationInterceptor;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CustomerService Tests")
@@ -134,13 +133,13 @@ class CustomerServiceTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1900-01-01, Boundary: very old birth date",
-            "2026-01-14, Boundary: today birth date",
-            "2024-05-14, Boundary: future birth date",
-            "2010-04-14, Boundary: future birth1 date",
-            "2010-04-14, Boundary: future birth1 date",
-            "1000-01-01, Boundary: future birth2 date",
-            "1500-01-01, Boundary: future birth3 date"
+        "1900-01-01, Boundary: very old birth date",
+        "2026-01-14, Boundary: today birth date",
+        "2024-05-14, Boundary: future birth date",
+        "2010-04-14, Boundary: future birth1 date",
+        "2010-04-14, Boundary: future birth1 date",
+        "1000-01-01, Boundary: future birth2 date",
+        "1500-01-01, Boundary: future birth3 date"
     })
     @DisplayName("Create customer with boundary birth dates should succeed")
     void shouldCreateCustomerWithBoundaryBirthDates(final String dateStr) {

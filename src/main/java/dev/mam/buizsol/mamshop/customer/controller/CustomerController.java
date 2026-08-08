@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,8 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 @Slf4j
 @Tag(name = "Customer", description = "Customer API")
@@ -46,14 +45,14 @@ public class CustomerController {
             description = "Changes the status of the specified customer to INACTIVE.")
     @ApiResponses(
             value = {
-                    @ApiResponse(responseCode = "204", description = "Customer deactivated successfully"),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "Customer not found",
-                            content =
-                            @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(implementation = ErrorResponse.class)))
+                @ApiResponse(responseCode = "204", description = "Customer deactivated successfully"),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "Customer not found",
+                        content =
+                                @Content(
+                                        mediaType = "application/json",
+                                        schema = @Schema(implementation = ErrorResponse.class)))
             })
     @PutMapping(value = "/{customerId}/deactivate")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
@@ -70,14 +69,14 @@ public class CustomerController {
             description = "Updates the address of the specified customer.")
     @ApiResponses(
             value = {
-                    @ApiResponse(responseCode = "204", description = "Address updated successfully"),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "Customer not found",
-                            content =
-                            @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(implementation = ErrorResponse.class)))
+                @ApiResponse(responseCode = "204", description = "Address updated successfully"),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "Customer not found",
+                        content =
+                                @Content(
+                                        mediaType = "application/json",
+                                        schema = @Schema(implementation = ErrorResponse.class)))
             })
     @PutMapping(value = "/{customerId}/address")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
@@ -99,14 +98,14 @@ public class CustomerController {
             description = "Updates the invoice address of the specified customer.")
     @ApiResponses(
             value = {
-                    @ApiResponse(responseCode = "204", description = "Invoice address updated successfully"),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "Customer not found",
-                            content =
-                            @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(implementation = ErrorResponse.class)))
+                @ApiResponse(responseCode = "204", description = "Invoice address updated successfully"),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "Customer not found",
+                        content =
+                                @Content(
+                                        mediaType = "application/json",
+                                        schema = @Schema(implementation = ErrorResponse.class)))
             })
     @PutMapping(value = "/{customerId}/invoice-address")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
@@ -128,14 +127,14 @@ public class CustomerController {
             description = "Updates the communication details of the specified customer.")
     @ApiResponses(
             value = {
-                    @ApiResponse(responseCode = "204", description = "Communication details updated successfully"),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "Customer not found",
-                            content =
-                            @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(implementation = ErrorResponse.class)))
+                @ApiResponse(responseCode = "204", description = "Communication details updated successfully"),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "Customer not found",
+                        content =
+                                @Content(
+                                        mediaType = "application/json",
+                                        schema = @Schema(implementation = ErrorResponse.class)))
             })
     @PutMapping(value = "/{customerId}/communication-details")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)

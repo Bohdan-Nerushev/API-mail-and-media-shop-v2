@@ -8,15 +8,14 @@ import io.sentry.SentryEnvelopeItem;
 import io.sentry.SentryOptions;
 import io.sentry.transport.ITransport;
 import io.sentry.transport.RateLimiter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 @Slf4j
 @Configuration
@@ -30,9 +29,9 @@ public class SentryConfig {
     private record LegacySentryTransport(SentryOptions options, RequestDetails requestDetails) implements ITransport {
 
         @Override
-            public RateLimiter getRateLimiter() {
-                return null;
-            }
+        public RateLimiter getRateLimiter() {
+            return null;
+        }
 
         @Override
         public void send(SentryEnvelope envelope, Hint hint) {
@@ -86,12 +85,10 @@ public class SentryConfig {
         }
 
         @Override
-        public void flush(long timeoutMillis) {
-        }
+        public void flush(long timeoutMillis) {}
 
         @Override
-        public void close(boolean isRestarting) {
-        }
+        public void close(boolean isRestarting) {}
 
         @Override
         public void close() {

@@ -1,5 +1,9 @@
 package dev.mam.buizsol.mamshop.config;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import dev.mam.buizsol.mamshop.billing.exception.InvalidInvoiceDiscountException;
 import dev.mam.buizsol.mamshop.billing.exception.InvoiceValidationException;
 import dev.mam.buizsol.mamshop.billing.model.Invoice;
@@ -20,17 +24,12 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.metadata.ConstraintDescriptor;
+import java.lang.annotation.Annotation;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
-
-import java.lang.annotation.Annotation;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @DisplayName("ValidationExceptionHandler Aspect Tests")
 class ValidationExceptionHandlerTest {
@@ -43,8 +42,7 @@ class ValidationExceptionHandlerTest {
         handler = new ValidationExceptionHandler();
     }
 
-    private @interface ActiveCustomer {
-    }
+    private @interface ActiveCustomer {}
 
     @Test
     @DisplayName("Should map ActiveCustomer violation to CustomerNotActiveException")
