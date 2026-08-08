@@ -9,6 +9,7 @@ import dev.mam.buizsol.mamshop.customer.dto.AddressResponseDTO;
 import dev.mam.buizsol.mamshop.customer.model.Address;
 import dev.mam.buizsol.mamshop.customer.model.Brand;
 import dev.mam.buizsol.mamshop.customer.model.Customer;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -16,7 +17,8 @@ import java.util.UUID;
 
 public class BillingTestFactory {
 
-    private BillingTestFactory() {}
+    private BillingTestFactory() {
+    }
 
     public static Invoice createInvoice(
             Brand brand,

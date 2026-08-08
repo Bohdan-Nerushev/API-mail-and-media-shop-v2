@@ -13,15 +13,17 @@ import dev.mam.buizsol.mamshop.product.dto.ProductResponseDTO;
 import dev.mam.buizsol.mamshop.product.model.PremiumMailProduct;
 import dev.mam.buizsol.mamshop.product.model.Product;
 import dev.mam.buizsol.mamshop.product.model.StandardMailProduct;
+import org.mockito.Mockito;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
-import org.mockito.Mockito;
 
 public final class ShopTestFactory {
 
-    private ShopTestFactory() {}
+    private ShopTestFactory() {
+    }
 
     public static PremiumMailProduct createPremiumProduct(String name, Brand brand, BigDecimal price) {
         return new PremiumMailProduct(name, brand, price);

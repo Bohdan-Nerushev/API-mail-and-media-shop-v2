@@ -1,9 +1,5 @@
 package dev.mam.buizsol.mamshop.billing.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-
 import dev.mam.buizsol.mamshop.billing.exception.InvalidInvoiceDiscountException;
 import dev.mam.buizsol.mamshop.contract.model.Contract;
 import dev.mam.buizsol.mamshop.customer.model.Address;
@@ -12,17 +8,22 @@ import dev.mam.buizsol.mamshop.customer.model.Customer;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.executable.ExecutableValidator;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 @DisplayName("Invoice Record Tests")
 class InvoiceTest {
@@ -140,7 +141,7 @@ class InvoiceTest {
                 Brand.class, Customer.class, Address.class, Address.class, List.class, BigDecimal.class);
 
         var violations = executableValidator.validateConstructorParameters(
-                constructor, new Object[] {null, null, null, null, null, null});
+                constructor, new Object[]{null, null, null, null, null, null});
 
         org.junit.jupiter.api.Assertions.assertFalse(violations.isEmpty());
         org.junit.jupiter.api.Assertions.assertEquals(6, violations.size());

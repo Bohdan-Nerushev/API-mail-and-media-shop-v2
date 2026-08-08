@@ -13,9 +13,10 @@ import dev.mam.buizsol.mamshop.product.exception.ProductNotFoundException;
 import dev.mam.buizsol.mamshop.product.model.Product;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.validation.annotation.Validated;
+
 import java.util.List;
 import java.util.UUID;
-import org.springframework.validation.annotation.Validated;
 
 @Validated
 public interface ShopService {

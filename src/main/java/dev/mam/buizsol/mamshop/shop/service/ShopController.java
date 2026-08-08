@@ -21,8 +21,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import java.util.List;
-import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,6 +34,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Tag(name = "Shop", description = "Shop API")
@@ -62,20 +63,20 @@ public class ShopController {
     @Operation(summary = "Register a new customer", description = "Creates a new customer with the given data.")
     @ApiResponses(
             value = {
-                @ApiResponse(
-                        responseCode = "201",
-                        description = "Customer registered successfully",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = CustomerResponseDTO.class))),
-                @ApiResponse(
-                        responseCode = "400",
-                        description = "Invalid customer data",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ErrorResponse.class)))
+                    @ApiResponse(
+                            responseCode = "201",
+                            description = "Customer registered successfully",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = CustomerResponseDTO.class))),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid customer data",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
             })
     @PostMapping(value = "/customers")
     @ResponseStatus(value = HttpStatus.CREATED)
@@ -99,20 +100,20 @@ public class ShopController {
     @Operation(summary = "Load a customer by ID", description = "Returns the customer with the specified ID.")
     @ApiResponses(
             value = {
-                @ApiResponse(
-                        responseCode = "200",
-                        description = "Customer loaded successfully",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = CustomerResponseDTO.class))),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "Customer not found",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ErrorResponse.class)))
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Customer loaded successfully",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = CustomerResponseDTO.class))),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Customer not found",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
             })
     @GetMapping(value = "/customers/{customerId}")
     @PreAuthorize("hasRole('USER')")
@@ -133,14 +134,14 @@ public class ShopController {
     @Operation(summary = "Remove a customer by ID", description = "Customer is deleted by their ID.")
     @ApiResponses(
             value = {
-                @ApiResponse(responseCode = "204", description = "Customer removed successfully"),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "Customer not found",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ErrorResponse.class)))
+                    @ApiResponse(responseCode = "204", description = "Customer removed successfully"),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Customer not found",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
             })
     @DeleteMapping(value = "/customers/{customerId}")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
@@ -157,14 +158,14 @@ public class ShopController {
             description = "Changes the status of the specified customer to ACTIVE.")
     @ApiResponses(
             value = {
-                @ApiResponse(responseCode = "204", description = "Customer activated successfully"),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "Customer not found",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ErrorResponse.class)))
+                    @ApiResponse(responseCode = "204", description = "Customer activated successfully"),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Customer not found",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
             })
     @PutMapping(value = "/customers/{customerId}/activate")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
@@ -179,20 +180,20 @@ public class ShopController {
     @Operation(summary = "Load all products for a brand", description = "Returns all products for the specified brand.")
     @ApiResponses(
             value = {
-                @ApiResponse(
-                        responseCode = "200",
-                        description = "Products loaded successfully",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ProductResponseDTO.class))),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "Brand not found",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ErrorResponse.class)))
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Products loaded successfully",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProductResponseDTO.class))),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Brand not found",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
             })
     @GetMapping(value = "/products")
     public @NotNull List<ProductResponseDTO> loadAllProductsForBrand(
@@ -215,27 +216,27 @@ public class ShopController {
             description = "Creates a new contract for the specified customer and product.")
     @ApiResponses(
             value = {
-                @ApiResponse(
-                        responseCode = "201",
-                        description = "Product purchased successfully",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ContractResponseDTO.class))),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "Customer or product not found",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ErrorResponse.class))),
-                @ApiResponse(
-                        responseCode = "400",
-                        description = "Invalid purchase data",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ErrorResponse.class)))
+                    @ApiResponse(
+                            responseCode = "201",
+                            description = "Product purchased successfully",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ContractResponseDTO.class))),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Customer or product not found",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class))),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid purchase data",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
             })
     @PostMapping(value = "/customers/{customerId}/purchases")
     @ResponseStatus(value = HttpStatus.CREATED)
@@ -260,20 +261,20 @@ public class ShopController {
             description = "Returns all contracts associated with the specified customer ID.")
     @ApiResponses(
             value = {
-                @ApiResponse(
-                        responseCode = "200",
-                        description = "Contracts loaded successfully",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ContractResponseDTO.class))),
-                @ApiResponse(
-                        responseCode = "404",
-                        description = "Customer not found",
-                        content =
-                                @Content(
-                                        mediaType = "application/json",
-                                        schema = @Schema(implementation = ErrorResponse.class)))
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Contracts loaded successfully",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ContractResponseDTO.class))),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Customer not found",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
             })
     @GetMapping(value = "/contracts/{customerId}")
     @PreAuthorize("hasRole('USER')")

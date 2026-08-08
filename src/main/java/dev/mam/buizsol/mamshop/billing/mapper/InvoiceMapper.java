@@ -6,8 +6,9 @@ import dev.mam.buizsol.mamshop.billing.model.Invoice;
 import dev.mam.buizsol.mamshop.billing.model.InvoiceItem;
 import dev.mam.buizsol.mamshop.customer.mapper.CustomerMapper;
 import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class InvoiceMapper {

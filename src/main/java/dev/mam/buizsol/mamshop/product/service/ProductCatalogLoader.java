@@ -1,11 +1,12 @@
 package dev.mam.buizsol.mamshop.product.service;
 
 import dev.mam.buizsol.mamshop.product.model.Product;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Slf4j
 @Component

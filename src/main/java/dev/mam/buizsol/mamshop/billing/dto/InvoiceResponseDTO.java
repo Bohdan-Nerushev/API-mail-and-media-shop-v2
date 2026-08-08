@@ -2,6 +2,7 @@ package dev.mam.buizsol.mamshop.billing.dto;
 
 import dev.mam.buizsol.mamshop.customer.dto.AddressResponseDTO;
 import dev.mam.buizsol.mamshop.customer.model.Brand;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,4 +18,5 @@ public record InvoiceResponseDTO(
         BigDecimal totalSetupFee,
         BigDecimal totalMonthlyFee,
         BigDecimal discount,
-        BigDecimal totalAmount) {}
+        BigDecimal totalAmount) {
+}
