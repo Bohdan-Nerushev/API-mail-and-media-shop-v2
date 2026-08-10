@@ -28,6 +28,11 @@
         <minimumBreadcrumbLevel>DEBUG</minimumBreadcrumbLevel>
     </appender>
 
+    <!-- Prevent infinite logging loop in Sentry custom transport -->
+    <logger name="dev.mam.buizsol.mamshop.config.SentryConfig" level="WARN" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
     <!-- Root logging level -->
     <root level="info">
         <appender-ref ref="STDOUT"/>
