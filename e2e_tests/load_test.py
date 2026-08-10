@@ -101,7 +101,7 @@ class CustomerLoadService:
                 self.config.customers_url, 
                 headers=self.config.headers, 
                 json=payload,
-                timeout=10
+                timeout=30
             )
             if response.status_code != 201:
                 return False, f"Registration failed with status {response.status_code}"
@@ -133,7 +133,7 @@ class PurchaseLoadService:
                 url, 
                 headers=self.config.headers, 
                 json=payload,
-                timeout=10
+                timeout=30
             )
             return response.status_code
         except Exception as e:

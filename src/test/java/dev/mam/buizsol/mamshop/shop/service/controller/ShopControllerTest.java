@@ -542,7 +542,8 @@ class ShopControllerTest {
     }
 
     @Test
-    @DisplayName("Positive: Given authenticated user, when GET /api/v1/shop/customers/me, then returns current customer")
+    @DisplayName(
+            "Positive: Given authenticated user, when GET /api/v1/shop/customers/me, then returns current customer")
     void shouldReturnCurrentCustomerSuccessfully() throws Exception {
         final UUID customerId = UUID.randomUUID();
 
