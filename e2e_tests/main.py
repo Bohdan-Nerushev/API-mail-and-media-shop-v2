@@ -39,7 +39,10 @@ from controller.customers_controller_end_to_end_api_test import (
     test_purchase_customer_inactive_fail,
     test_delete_active_customer_fail,
     test_should_handle_product_purchase_idempotently_when_called_multiple_times,
-    test_should_verify_purchased_product_data_integrity_after_purchase
+    test_should_verify_purchased_product_data_integrity_after_purchase,
+    test_get_current_customer_me_success,
+    test_get_current_customer_me_unauthorized,
+    test_get_current_customer_me_not_found
 )
 from controller.contracts_controller_end_to_end_api_test import (
     test_should_successfully_list_contracts_when_customer_id_is_valid,
@@ -98,6 +101,8 @@ KC_PASSWORD = os.getenv("KC_PASSWORD")
 INVALID_CUSTOMER_ID = str(uuid.uuid4())
 INVALID_CONTRACT_ID = str(uuid.uuid4())
 
+USER_EMAIL = os.getenv("USER_EMAIL", "postman2@example.com")
+
 # ---------------------------
 # Test Data Preparation
 # ---------------------------
@@ -114,7 +119,7 @@ valid_customer_payload = {
     },
     "invoiceAddress": None,
     "communicationDetails": {
-        "email": "max.mustermann@gmx.de",
+        "email": USER_EMAIL,
         "telephone": "+49 621 123456"
     },
     "brand": "GMX"
@@ -187,8 +192,10 @@ if __name__ == "__main__":
     test_register_customer_null_fields(BASE_URL_SHOP_CUSTOMERS, HEADERS, valid_customer_payload)
 
     # 4. Inactive state checks (Scenario 2, 3, 10)
+    test_get_current_customer_me_unauthorized(BASE_URL_SHOP)
     user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
     HEADERS["Authorization"] = f"Bearer {user_token}"
+    test_get_current_customer_me_success(BASE_URL_SHOP, HEADERS, customer_id)
     test_update_address_inactive_fail(customer_id, BASE_URL_CUSTOMERS, HEADERS)
 
 

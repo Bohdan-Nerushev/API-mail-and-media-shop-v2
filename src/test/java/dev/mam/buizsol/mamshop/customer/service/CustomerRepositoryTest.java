@@ -31,4 +31,16 @@ class CustomerRepositoryTest {
         assertThat(result).isEmpty();
         verify(repository).findById(id);
     }
+
+    @Test
+    @DisplayName("Should verify mock interaction for findByCommunicationDetailsEmail")
+    void shouldFindCustomerByCommunicationDetailsEmail() {
+        String email = "test@example.com";
+        when(repository.findByCommunicationDetailsEmail(email)).thenReturn(Optional.empty());
+
+        var result = repository.findByCommunicationDetailsEmail(email);
+
+        assertThat(result).isEmpty();
+        verify(repository).findByCommunicationDetailsEmail(email);
+    }
 }

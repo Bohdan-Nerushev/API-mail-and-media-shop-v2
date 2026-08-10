@@ -370,6 +370,27 @@ class CustomerServiceTest {
     }
 
     @Test
+    @DisplayName("Find customer by email should return customer from repository")
+    void shouldReturnCustomerWhenFindingByEmailSuccessfully() {
+        final String email = "john.doe@example.com";
+        final Customer customer = mock(Customer.class);
+        when(customerRepository.findByCommunicationDetailsEmail(email)).thenReturn(Optional.of(customer));
+
+        final Optional<Customer> result = customerService.findCustomerByEmail(email);
+
+        assertTrue(result.isPresent());
+        assertEquals(customer, result.get());
+        verify(customerRepository).findByCommunicationDetailsEmail(email);
+    }
+
+    @Test
+    @DisplayName("Find customer by blank email should return empty optional")
+    void shouldReturnEmptyWhenFindingByBlankEmail() {
+        final Optional<Customer> result = customerService.findCustomerByEmail("   ");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
     @DisplayName("Negative: createCustomer with null customer")
     void shouldThrowExceptionWhenCreatingNullCustomer() {
         assertThrows(ConstraintViolationException.class, () -> customerService.createCustomer(null));

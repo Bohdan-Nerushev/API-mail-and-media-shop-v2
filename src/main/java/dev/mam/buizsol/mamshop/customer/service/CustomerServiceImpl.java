@@ -30,7 +30,7 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", allEntries = true)
+    @CacheEvict(value = {"customers", "customersByEmail"}, allEntries = true)
     public Customer createCustomer(final Customer customer) {
         if (customer == null) {
             throw new CustomerValidationException("Customer must not be null");
@@ -64,7 +64,7 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(value = {"customers", "customersByEmail"}, allEntries = true)
     public void updateCommunicationDetails(final UUID customerId, final CommunicationDetails communicationDetails)
             throws CustomerNotFoundException {
         if (customerId == null || communicationDetails == null) {
@@ -101,7 +101,7 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(value = {"customers", "customersByEmail"}, allEntries = true)
     public void deleteCustomer(final UUID customerId) throws CustomerNotFoundException {
         if (customerId == null) {
             throw new CustomerValidationException("Customer ID must not be null");
@@ -116,6 +116,15 @@ class CustomerServiceImpl implements CustomerService {
     @Cacheable(value = "customers", key = "#customerId")
     public Optional<Customer> findCustomerById(final UUID customerId) {
         return customerRepository.findById(customerId);
+    }
+
+    @Override
+    @Cacheable(value = "customersByEmail", key = "#email")
+    public Optional<Customer> findCustomerByEmail(final String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return customerRepository.findByCommunicationDetailsEmail(email);
     }
 
     @Override

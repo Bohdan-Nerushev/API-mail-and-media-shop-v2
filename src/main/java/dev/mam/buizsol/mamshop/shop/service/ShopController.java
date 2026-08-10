@@ -24,6 +24,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -94,6 +96,41 @@ public class ShopController {
         log.debug("Customer response DTO: {}", customerResponseDTO);
 
         log.info("Customer registered successfully: {}", customerResponseDTO);
+        return customerResponseDTO;
+    }
+
+    @Operation(
+            summary = "Load current authenticated customer",
+            description = "Returns the customer profile associated with the authenticated user.")
+    @ApiResponses(
+            value = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Current customer loaded successfully",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = CustomerResponseDTO.class))),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Customer not found",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
+            })
+    @GetMapping(value = "/customers/me")
+    @PreAuthorize("hasRole('USER')")
+    public @NotNull CustomerResponseDTO loadCurrentCustomer(@AuthenticationPrincipal final Jwt jwt) {
+        log.debug("Loading current customer for JWT: {}", jwt != null ? jwt.getSubject() : "null");
+
+        final Customer customer = shopService.loadCustomerByJwt(jwt);
+        log.debug("Current customer: {}", customer);
+
+        final CustomerResponseDTO customerResponseDTO = customerMapper.toResponseDTO(customer);
+        log.debug("Current customer response DTO: {}", customerResponseDTO);
+
+        log.info("Current customer loaded successfully: {}", customerResponseDTO);
         return customerResponseDTO;
     }
 

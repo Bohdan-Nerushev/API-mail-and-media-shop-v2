@@ -34,10 +34,16 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
 import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -64,7 +70,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = ShopController.class,
         excludeAutoConfiguration = {SecurityAutoConfiguration.class, OAuth2ResourceServerAutoConfiguration.class})
+@Import(ShopControllerTest.TestConfig.class)
 class ShopControllerTest {
+
+    @TestConfiguration
+    static class TestConfig implements WebMvcConfigurer {
+        @Override
+        public void addArgumentResolvers(final List<HandlerMethodArgumentResolver> resolvers) {
+            resolvers.add(new AuthenticationPrincipalArgumentResolver());
+        }
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -524,5 +539,89 @@ class ShopControllerTest {
 
         verify(shopService).loadAllContracts(customerId);
         verifyNoInteractions(contractMapper);
+    }
+
+    @Test
+    @DisplayName("Positive: Given authenticated user, when GET /api/v1/shop/customers/me, then returns current customer")
+    void shouldReturnCurrentCustomerSuccessfully() throws Exception {
+        final UUID customerId = UUID.randomUUID();
+
+        final Jwt mockJwt = Mockito.mock(Jwt.class);
+        final org.springframework.security.core.context.SecurityContext securityContext =
+                org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(
+                new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(mockJwt));
+        org.springframework.security.core.context.SecurityContextHolder.setContext(securityContext);
+
+        try {
+            final Customer customer = CustomerTestFactory.createCustomer(
+                    customerId,
+                    "John",
+                    "Doe",
+                    LocalDate.of(1990, 1, 1),
+                    CustomerTestFactory.createAddress("Main St", "10", "12345", "Berlin", "Germany"),
+                    null,
+                    CustomerTestFactory.createCommunicationDetails("john.doe@example.com", "+49123456789"),
+                    Brand.GMX,
+                    CustomerStatus.ACTIVE);
+
+            final AddressResponseDTO addressResponseDto =
+                    CustomerTestFactory.createAddressResponseDTO("Main St", "10", "12345", "Berlin", "Germany");
+            final CommunicationDetailsResponseDTO commResponseDto =
+                    CustomerTestFactory.createCommunicationDetailsResponseDTO("john.doe@example.com", "+49123456789");
+
+            final CustomerResponseDTO responseDto = CustomerTestFactory.createCustomerResponseDTO(
+                    customerId,
+                    "John",
+                    "Doe",
+                    LocalDate.of(1990, 1, 1),
+                    addressResponseDto,
+                    addressResponseDto,
+                    commResponseDto,
+                    Brand.GMX,
+                    CustomerStatus.ACTIVE);
+
+            when(shopService.loadCustomerByJwt(mockJwt)).thenReturn(customer);
+            when(customerMapper.toResponseDTO(any(Customer.class))).thenReturn(responseDto);
+
+            mockMvc.perform(get("/api/v1/shop/customers/me").accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id", is(customerId.toString())))
+                    .andExpect(jsonPath("$.firstName", is("John")))
+                    .andExpect(jsonPath("$.lastName", is("Doe")))
+                    .andExpect(jsonPath("$.brand", is("GMX")))
+                    .andExpect(jsonPath("$.status", is("ACTIVE")));
+
+            verify(shopService).loadCustomerByJwt(mockJwt);
+            verify(customerMapper).toResponseDTO(customer);
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @DisplayName("Negative: Given unmapped JWT user, when GET /api/v1/shop/customers/me, then returns 404")
+    void shouldReturn404WhenCurrentCustomerNotFound() throws Exception {
+        final Jwt mockJwt = Mockito.mock(Jwt.class);
+        final org.springframework.security.core.context.SecurityContext securityContext =
+                org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(
+                new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(mockJwt));
+        org.springframework.security.core.context.SecurityContextHolder.setContext(securityContext);
+
+        try {
+            when(shopService.loadCustomerByJwt(mockJwt))
+                    .thenThrow(new CustomerNotFoundException("Customer not found for the authenticated user"));
+
+            mockMvc.perform(get("/api/v1/shop/customers/me").accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message", is("Customer not found")))
+                    .andExpect(jsonPath("$.errorCode", is("CUSTOMER_NOT_FOUND")));
+
+            verify(shopService).loadCustomerByJwt(mockJwt);
+            verifyNoInteractions(customerMapper);
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
     }
 }
