@@ -85,7 +85,8 @@ class CustomerLoadService:
                 "email": "loadtest@example.com",
                 "telephone": "+49 123456789"
             },
-            "brand": "GMX"
+            "brand": "GMX",
+            "password": "securePassword123"
         }
 
     def register_and_activate(self, index: int) -> Tuple[bool, Optional[str]]:

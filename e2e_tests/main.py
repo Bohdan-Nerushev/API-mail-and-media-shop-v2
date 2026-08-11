@@ -2,8 +2,12 @@ import copy
 import uuid
 import logging
 import os
+import requests
+import urllib3
 from pathlib import Path
 from dotenv import load_dotenv
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configure logging
 logging.basicConfig(
@@ -96,12 +100,11 @@ KC_CLIENT_SECRET = os.getenv("KC_CLIENT_SECRET")
 KC_GRANT_TYPE = os.getenv("KC_GRANT_TYPE")
 KC_USERNAME = os.getenv("KC_USERNAME")
 KC_PASSWORD = os.getenv("KC_PASSWORD")
-
-# UUIDs for negative test scenarios
 INVALID_CUSTOMER_ID = str(uuid.uuid4())
 INVALID_CONTRACT_ID = str(uuid.uuid4())
-
 USER_EMAIL = os.getenv("USER_EMAIL", "postman2@example.com")
+KC_USERNAME = USER_EMAIL
+os.environ["KC_USERNAME"] = USER_EMAIL
 
 # ---------------------------
 # Test Data Preparation
@@ -122,7 +125,8 @@ valid_customer_payload = {
         "email": USER_EMAIL,
         "telephone": "+49 621 123456"
     },
-    "brand": "GMX"
+    "brand": "GMX",
+    "password": KC_PASSWORD
 }
 #======================================================================================#
 #        RUN COMMAND - from the project root directory to run the end-to-end test      #
@@ -165,11 +169,59 @@ cd ..
 #======================================================================================#
 
 
+def cleanup_keycloak_user():
+    kc_url = os.getenv("KC_URL")
+    realm = os.getenv("KC_REALM")
+    admin_user = os.getenv("KC_ADMIN_USER", "admin")
+    admin_pass = os.getenv("KC_ADMIN_PASS", "admin")
+    test_email = os.getenv("USER_EMAIL", "postman2@example.com")
+    
+    if not kc_url or not realm:
+        logger.warning("Cleanup skipped: KC_URL or KC_REALM not configured")
+        return
+        
+    try:
+        # 1. Get Keycloak Admin token
+        token_url = f"{kc_url.rstrip('/')}/realms/master/protocol/openid-connect/token"
+        payload = {
+            "client_id": "admin-cli",
+            "username": admin_user,
+            "password": admin_pass,
+            "grant_type": "password"
+        }
+        res = requests.post(token_url, data=payload, verify=False, timeout=10)
+        if res.status_code != 200:
+            logger.warning(f"Cleanup: Failed to get Keycloak admin token: HTTP {res.status_code}")
+            return
+        admin_token = res.json().get("access_token")
+
+        # 2. Search user by email
+        search_url = f"{kc_url.rstrip('/')}/admin/realms/{realm}/users?email={test_email}"
+        res = requests.get(search_url, headers={"Authorization": f"Bearer {admin_token}"}, verify=False, timeout=10)
+        if res.status_code == 200:
+            users = res.json()
+            if users:
+                user_id = users[0].get("id")
+                # 3. Delete user
+                delete_url = f"{kc_url.rstrip('/')}/admin/realms/{realm}/users/{user_id}"
+                del_res = requests.delete(delete_url, headers={"Authorization": f"Bearer {admin_token}"}, verify=False, timeout=10)
+                if del_res.status_code == 204:
+                    logger.info(f"Cleanup: Deleted user {test_email} from Keycloak successfully.")
+                else:
+                    logger.warning(f"Cleanup: Failed to delete user from Keycloak: HTTP {del_res.status_code}")
+            else:
+                logger.info(f"Cleanup: User {test_email} not found in Keycloak. No action needed.")
+    except Exception as e:
+        logger.warning(f"Cleanup: Failed to execute Keycloak cleanup: {e}")
+
 # ---------------------------
 # Test Execution
 # ---------------------------
 if __name__ == "__main__":
     logger.info("=== Starting E2E Tests ===")
+    
+    # 0. Clean up test user in Keycloak if exists
+    cleanup_keycloak_user()
 
     # 1. Product tests (require only the base URL)
     test_should_successfully_retrieve_products_when_valid_brand_is_provided(BASE_URL_PRODUCTS)

@@ -53,6 +53,7 @@ package_job:
   script:
     - chmod +x scripts/4_docker-package.sh
     - ./scripts/4_docker-package.sh
+  when: manual   
   tags:
     - maven
 
