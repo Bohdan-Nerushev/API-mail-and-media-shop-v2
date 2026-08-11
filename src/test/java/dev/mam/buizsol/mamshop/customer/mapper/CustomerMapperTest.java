@@ -34,8 +34,8 @@ class CustomerMapperTest {
     void shouldMapDtoToCustomer() {
         final AddressRequestDTO addressDTO = new AddressRequestDTO("Street", "1", "12345", "City", "Country");
         final CommunicationDetailsRequestDTO commDTO = new CommunicationDetailsRequestDTO("test@mail.dev", "123456");
-        final CustomerRequestDTO requestDTO =
-                new CustomerRequestDTO("John", "Doe", LocalDate.of(1990, 1, 1), addressDTO, null, commDTO, Brand.GMX);
+        final CustomerRequestDTO requestDTO = new CustomerRequestDTO(
+                "John", "Doe", LocalDate.of(1990, 1, 1), addressDTO, null, commDTO, Brand.GMX, "password123");
 
         final Customer result = customerMapper.toCustomer(requestDTO);
 
@@ -56,7 +56,7 @@ class CustomerMapperTest {
         final AddressRequestDTO invAddress = new AddressRequestDTO("Inv St", "99", "999", "Other", "DE");
         final CommunicationDetailsRequestDTO commDTO = new CommunicationDetailsRequestDTO("test@mail.dev", "123456");
         final CustomerRequestDTO requestDTO = new CustomerRequestDTO(
-                "John", "Doe", LocalDate.of(1990, 1, 1), mainAddress, invAddress, commDTO, Brand.GMX);
+                "John", "Doe", LocalDate.of(1990, 1, 1), mainAddress, invAddress, commDTO, Brand.GMX, "password123");
 
         final Customer result = customerMapper.toCustomer(requestDTO);
 

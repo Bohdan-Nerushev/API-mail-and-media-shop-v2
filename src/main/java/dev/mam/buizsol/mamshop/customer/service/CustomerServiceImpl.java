@@ -20,12 +20,14 @@ import java.util.UUID;
 class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final KeycloakAdminService keycloakAdminService;
 
-    CustomerServiceImpl(final CustomerRepository customerRepository) {
-        if (customerRepository == null) {
-            throw new CustomerValidationException("Customer repository must not be null");
+    CustomerServiceImpl(final CustomerRepository customerRepository, final KeycloakAdminService keycloakAdminService) {
+        if (customerRepository == null || keycloakAdminService == null) {
+            throw new CustomerValidationException("Dependencies must not be null");
         }
         this.customerRepository = customerRepository;
+        this.keycloakAdminService = keycloakAdminService;
     }
 
     @Override
@@ -37,6 +39,17 @@ class CustomerServiceImpl implements CustomerService {
         if (customer == null) {
             throw new CustomerValidationException("Customer must not be null");
         }
+        if (customer.getPassword() == null || customer.getPassword().isBlank()) {
+            throw new CustomerValidationException("Password must not be empty");
+        }
+
+        final UUID keycloakUserId = keycloakAdminService.createUser(
+                customer.getCommunicationDetails().getEmail(),
+                customer.getFirstName(),
+                customer.getLastName(),
+                customer.getPassword());
+
+        customer.setId(keycloakUserId);
         return customerRepository.save(customer);
     }
 

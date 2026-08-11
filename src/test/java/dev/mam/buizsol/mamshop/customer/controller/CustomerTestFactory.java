@@ -34,7 +34,7 @@ public final class CustomerTestFactory {
             final CommunicationDetailsRequestDTO communicationDetails,
             final Brand brand) {
         return new CustomerRequestDTO(
-                firstName, lastName, birthDate, address, invoiceAddress, communicationDetails, brand);
+                firstName, lastName, birthDate, address, invoiceAddress, communicationDetails, brand, "secretPassword");
     }
 
     public static AddressRequestDTO createAddressRequestDTO(

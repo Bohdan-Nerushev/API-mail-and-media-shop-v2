@@ -12,6 +12,7 @@ import dev.mam.buizsol.mamshop.customer.model.Brand;
 import dev.mam.buizsol.mamshop.customer.model.CommunicationDetails;
 import dev.mam.buizsol.mamshop.customer.model.Customer;
 import dev.mam.buizsol.mamshop.customer.model.CustomerStatus;
+import dev.mam.buizsol.mamshop.customer.service.KeycloakAdminService;
 import dev.mam.buizsol.mamshop.product.exception.ProductNotFoundException;
 import dev.mam.buizsol.mamshop.product.model.PremiumMailProduct;
 import dev.mam.buizsol.mamshop.product.model.Product;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -40,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Transactional
@@ -55,8 +58,18 @@ class ShopServiceImplIntegrationTest {
     @MockitoBean
     private JwtDecoder jwtDecoder;
 
+    @MockitoBean
+    private KeycloakAdminService keycloakAdminService;
+
     @BeforeEach
     void setUp() {
+        when(keycloakAdminService.createUser(
+                ArgumentMatchers.anyString(),
+                ArgumentMatchers.anyString(),
+                ArgumentMatchers.anyString(),
+                ArgumentMatchers.anyString()))
+                .thenReturn(UUID.randomUUID());
+
         initializeProductIfNotExists("GMX Basic Mail", Brand.GMX, new BigDecimal("0.50"));
         initializeProductIfNotExists("MAIL_COM Basic Mail", Brand.MAIL_COM, new BigDecimal("0.50"));
         initializeProductIfNotExists("WEB_DE Basic Mail", Brand.WEB_DE, new BigDecimal("0.50"));
@@ -108,7 +121,10 @@ class ShopServiceImplIntegrationTest {
             final Address address,
             final Address invoiceAddress,
             final CommunicationDetails communicationDetails) {
-        return Customer.create(firstName, lastName, birthDate, address, invoiceAddress, communicationDetails, brand);
+        final Customer customer =
+                Customer.create(firstName, lastName, birthDate, address, invoiceAddress, communicationDetails, brand);
+        customer.setPassword("secretPassword");
+        return customer;
     }
 
     @ParameterizedTest

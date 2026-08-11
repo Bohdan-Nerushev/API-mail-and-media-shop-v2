@@ -17,5 +17,6 @@ public record CustomerRequestDTO(
         @NotNull @Valid AddressRequestDTO address,
         @Nullable @Valid AddressRequestDTO invoiceAddress,
         @NotNull @Valid CommunicationDetailsRequestDTO communicationDetails,
-        @NotNull Brand brand) {
+        @NotNull Brand brand,
+        @NotBlank @Size(min = 8, max = 100) String password) {
 }
