@@ -215,6 +215,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SHOP_DB_PASSWORD}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: https://keycloak:8443/realms/${KC_REALM}
       SENTRY_DSN: ${SENTRY_DSN}
+      KC_INTERNAL_URL: https://keycloak:8443
       JDK_JAVA_OPTIONS: "-Djavax.net.ssl.trustStore=/app/certs/truststore.jks -Djavax.net.ssl.trustStorePassword=${TRUSTSTORE_PASSWORD}"
 
 

@@ -55,7 +55,7 @@ spring:
 app:
   keycloak:
     external-url: ${KC_URL:https://localhost:8443}
-    internal-url: ${KC_INTERNAL_URL:http://keycloak:8080}
+    internal-url: ${KC_INTERNAL_URL:https://keycloak:8443}
     realm: ${KC_REALM:mail-and-media-shop-realm}
     admin-user: ${KC_ADMIN_USER:admin}
     admin-pass: ${KC_ADMIN_PASS:admin}
