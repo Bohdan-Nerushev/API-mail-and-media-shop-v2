@@ -20,7 +20,6 @@ import java.util.UUID;
 public class KeycloakAdminService {
 
     private final RestClient restClient;
-    private final String internalUrl;
     private final String realm;
     private final String adminUser;
     private final String adminPass;
@@ -30,7 +29,6 @@ public class KeycloakAdminService {
             @Value("${app.keycloak.realm:mail-and-media-shop-realm}") final String realm,
             @Value("${app.keycloak.admin-user:admin}") final String adminUser,
             @Value("${app.keycloak.admin-pass:admin}") final String adminPass) {
-        this.internalUrl = internalUrl;
         this.realm = realm;
         this.adminUser = adminUser;
         this.adminPass = adminPass;
