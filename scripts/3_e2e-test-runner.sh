@@ -114,4 +114,10 @@ if [ -d "$PROJECT_ROOT/logs" ]; then
     docker run --rm -v "$PROJECT_ROOT/logs:/logs" docker:cli chmod -R 777 /logs 2>/dev/null || true
 fi
 
+#==============================================================================
+# PHASE 6:STOP THE DOCKER-COMPOSESTACK
+#==============================================================================
+docker compose down -v 
+
+
 exit $TEST_EXIT_CODE
