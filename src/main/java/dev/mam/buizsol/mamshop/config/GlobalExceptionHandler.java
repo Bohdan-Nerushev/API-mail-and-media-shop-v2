@@ -1,6 +1,7 @@
 package dev.mam.buizsol.mamshop.config;
 
 import dev.mam.buizsol.mamshop.billing.exception.InvalidInvoiceDiscountException;
+import dev.mam.buizsol.mamshop.billing.exception.InvoicePdfGenerationException;
 import dev.mam.buizsol.mamshop.billing.exception.InvoiceValidationException;
 import dev.mam.buizsol.mamshop.contract.exception.BrandMismatchException;
 import dev.mam.buizsol.mamshop.contract.exception.ContractNotFoundException;
@@ -141,6 +142,18 @@ public class GlobalExceptionHandler {
                         getCorrelationId(),
                         "INVOICE_VALIDATION_ERROR",
                         "Invoice validation failed: " + ex.getMessage(),
+                        LocalDateTime.now()));
+    }
+
+    @ExceptionHandler(InvoicePdfGenerationException.class)
+    public ResponseEntity<ErrorResponse> handleInvoicePdfGenerationException(InvoicePdfGenerationException ex) {
+        log.error("Invoice PDF generation failed for correlationId: {}", getCorrelationId(), ex);
+        captureSentry(ex);
+        return ResponseEntity.status(500)
+                .body(new ErrorResponse(
+                        getCorrelationId(),
+                        "INVOICE_PDF_GENERATION_ERROR",
+                        "Invoice PDF generation failed",
                         LocalDateTime.now()));
     }
 

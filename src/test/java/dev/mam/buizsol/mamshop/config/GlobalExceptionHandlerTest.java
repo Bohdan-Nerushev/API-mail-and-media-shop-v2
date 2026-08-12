@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -27,6 +28,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @DisplayName("GlobalExceptionHandler Tests")
 class GlobalExceptionHandlerTest {
@@ -150,6 +152,11 @@ class GlobalExceptionHandlerTest {
     @DisplayName("Should handle MethodArgumentNotValidException (400)")
     void shouldHandleMethodArgumentNotValidException() {
         MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
+        BindingResult bindingResult =
+                mock(BindingResult.class);
+        when(ex.getBindingResult()).thenReturn(bindingResult);
+        when(bindingResult.getFieldErrors()).thenReturn(java.util.List.of());
+
         ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentNotValidException(ex);
         assertEquals(400, response.getStatusCode().value());
         assertEquals("REQUEST_VALIDATION_ERROR", response.getBody().errorCode());
