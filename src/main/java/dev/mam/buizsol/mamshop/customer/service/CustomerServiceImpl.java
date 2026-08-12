@@ -55,7 +55,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void updateAddress(final UUID customerId, final Address address) throws CustomerNotFoundException {
         if (customerId == null || address == null) {
             throw new CustomerValidationException("Parameters must not be null");
@@ -67,7 +69,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void updateInvoiceAddress(final UUID customerId, final Address address) throws CustomerNotFoundException {
         if (customerId == null || address == null) {
             throw new CustomerValidationException("Parameters must not be null");
@@ -94,7 +98,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void activateCustomer(final UUID customerId) throws CustomerNotFoundException {
         if (customerId == null) {
             throw new CustomerValidationException("Customer ID must not be null");
@@ -106,7 +112,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void deactivateCustomer(final UUID customerId) throws CustomerNotFoundException {
         if (customerId == null) {
             throw new CustomerValidationException("Customer ID must not be null");

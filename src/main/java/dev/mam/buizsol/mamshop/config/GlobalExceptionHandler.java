@@ -148,11 +148,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         log.error("Request validation failed for correlationId: {}", getCorrelationId(), ex);
         captureSentry(ex);
+        String details = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(java.util.stream.Collectors.joining(", "));
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
                         "REQUEST_VALIDATION_ERROR",
-                        "Request validation failed",
+                        "Request validation failed: " + details,
                         LocalDateTime.now()));
     }
 
@@ -160,11 +163,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException ex) {
         log.error("Request validation failed for correlationId: {}", getCorrelationId(), ex);
         captureSentry(ex);
+        String details = ex.getValueResults().stream()
+                .flatMap(result -> result.getResolvableErrors().stream())
+                .map(error -> error.getDefaultMessage())
+                .collect(java.util.stream.Collectors.joining(", "));
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
                         "REQUEST_VALIDATION_ERROR",
-                        "Request validation failed",
+                        "Request validation failed: " + details,
                         LocalDateTime.now()));
     }
 
@@ -172,9 +179,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex) {
         log.error("Constraint violation for correlationId: {}", getCorrelationId(), ex);
         captureSentry(ex);
+        String details = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .collect(java.util.stream.Collectors.joining(", "));
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
-                        getCorrelationId(), "CONSTRAINT_VIOLATION", "Constraint violation", LocalDateTime.now()));
+                        getCorrelationId(),
+                        "CONSTRAINT_VIOLATION",
+                        "Constraint violation: " + details,
+                        LocalDateTime.now()));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
