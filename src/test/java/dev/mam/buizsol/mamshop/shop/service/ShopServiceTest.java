@@ -55,32 +55,29 @@ class ShopServiceTest {
     }
 
     @Test
-    @DisplayName("Remove Customer: Should throw exception when customer is active and has active contracts")
-    void shouldThrowExceptionWhenRemovingActiveCustomerWithActiveContracts() {
+    @DisplayName("Remove Customer: Should throw exception when customer is active and has contracts")
+    void shouldThrowExceptionWhenRemovingActiveCustomerWithContracts() {
         final UUID customerId = UUID.randomUUID();
         final Customer customer = mock(Customer.class);
-        final Contract activeContract = mock(Contract.class);
+        final Contract contract = mock(Contract.class);
 
         when(customerService.findCustomerById(customerId)).thenReturn(Optional.of(customer));
         when(customer.getStatus()).thenReturn(CustomerStatus.ACTIVE);
-        when(contractService.findContractsByCustomerId(customerId)).thenReturn(List.of(activeContract));
-        when(activeContract.getStatus()).thenReturn(ContractStatus.ACTIVE);
+        when(contractService.findContractsByCustomerId(customerId)).thenReturn(List.of(contract));
 
         assertThrows(CustomerValidationException.class, () -> shopService.removeCustomer(customerId));
         verify(customerService, never()).deleteCustomer(customerId);
     }
 
     @Test
-    @DisplayName("Remove Customer: Should succeed when customer is active but has no active contracts")
-    void shouldSucceedWhenRemovingActiveCustomerWithoutActiveContracts() throws Exception {
+    @DisplayName("Remove Customer: Should succeed when customer is active and has no contracts")
+    void shouldSucceedWhenRemovingActiveCustomerWithoutContracts() throws Exception {
         final UUID customerId = UUID.randomUUID();
         final Customer customer = mock(Customer.class);
-        final Contract inactiveContract = mock(Contract.class);
 
         when(customerService.findCustomerById(customerId)).thenReturn(Optional.of(customer));
         when(customer.getStatus()).thenReturn(CustomerStatus.ACTIVE);
-        when(contractService.findContractsByCustomerId(customerId)).thenReturn(List.of(inactiveContract));
-        when(inactiveContract.getStatus()).thenReturn(ContractStatus.INACTIVE);
+        when(contractService.findContractsByCustomerId(customerId)).thenReturn(List.of());
 
         shopService.removeCustomer(customerId);
 

@@ -70,3 +70,31 @@ def test_should_return_404_when_listing_contracts_for_deleted_customer(customer_
     response = requests.get(url, headers=headers)
     assert response.status_code == 404, f"Expected 404 for deleted customer contracts, got {response.status_code}"
     logger.info("Test Success: Contracts not accessible for deleted customer passed.")
+
+
+def test_should_terminate_contract_successfully_when_ids_are_valid(customer_id, contract_id, base_url, headers=None):
+    """Test that the API terminates (deactivates) a contract successfully for valid customer and contract IDs."""
+    url = f"{base_url}/{contract_id}/{customer_id}/terminate"
+    response = requests.put(url, headers=headers)
+    assert response.status_code == 204, f"Expected 204, got {response.status_code}"
+    logger.info(f"Test Success: Contract {contract_id} terminated successfully for customer {customer_id}.")
+
+
+def test_should_return_404_when_terminating_non_existent_contract(customer_id, base_url, invalid_contract_id, headers=None):
+    """Verify that terminating a non-existent contract returns 404."""
+    url = f"{base_url}/{invalid_contract_id}/{customer_id}/terminate"
+    response = requests.put(url, headers=headers)
+    assert response.status_code == 404, f"Expected 404, got {response.status_code}"
+    logger.info("Test Success: Contract not found handled correctly during termination.")
+
+
+def test_should_return_400_when_terminating_contract_belonging_to_another_customer(wrong_customer_id, contract_id, base_url, headers=None):
+    """Verify that terminating a contract that does not belong to the specified customer returns 400."""
+    url = f"{base_url}/{contract_id}/{wrong_customer_id}/terminate"
+    response = requests.put(url, headers=headers)
+    assert response.status_code == 400, \
+        f"Expected 400 for contract ownership mismatch during termination, got {response.status_code}"
+    data = response.json()
+    assert data.get("errorCode") == "CUSTOMER_VALIDATION_ERROR", \
+        f"Expected errorCode CUSTOMER_VALIDATION_ERROR, got {data.get('errorCode')}"
+    logger.info("Test Success: Contract ownership mismatch during termination handled correctly (400).")

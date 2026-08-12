@@ -32,7 +32,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @Transactional(readOnly = true)
-class ShopServiceImpl implements ShopService {
+public class ShopServiceImpl implements ShopService {
 
     private final CustomerService customerService;
     private final ProductService productService;
@@ -109,10 +109,8 @@ class ShopServiceImpl implements ShopService {
         final Customer customer = loadCustomer(customerId);
         final List<Contract> contracts = contractService.findContractsByCustomerId(customerId);
 
-        final boolean hasActiveContracts = contracts.stream().anyMatch(c -> c.getStatus() == ContractStatus.ACTIVE);
-
-        if (customer.getStatus() == CustomerStatus.ACTIVE && hasActiveContracts) {
-            throw new CustomerValidationException("Cannot remove active customer with active contracts");
+        if (customer.getStatus() == CustomerStatus.ACTIVE && !contracts.isEmpty()) {
+            throw new CustomerValidationException("Cannot remove active customer with contracts");
         }
         customerService.deleteCustomer(customerId);
     }
@@ -197,6 +195,27 @@ class ShopServiceImpl implements ShopService {
 
         contractService.updateContractStatus(contractId, ContractStatus.ACTIVE);
     }
+
+    @Override
+    @Transactional
+    public void terminateContract(final UUID customerId, final UUID contractId)
+            throws CustomerNotFoundException, ContractNotFoundException {
+        final Contract contract = contractService
+                .findContractById(contractId)
+                .orElseThrow(() -> new ContractNotFoundException("Contract not found: " + contractId));
+
+        if (!contract.getCustomer().getId().equals(customerId)) {
+            throw new CustomerValidationException("Contract does not belong to the specified customer");
+        }
+
+        if (contract.getStatus() == ContractStatus.INACTIVE) {
+            log.info("Contract {} is already inactive, skipping", contractId);
+            return;
+        }
+
+        contractService.updateContractStatus(contractId, ContractStatus.INACTIVE);
+    }
+
 
     @Override
     @Cacheable(value = "products", key = "#brand")

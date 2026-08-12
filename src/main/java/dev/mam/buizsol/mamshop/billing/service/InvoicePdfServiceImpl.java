@@ -69,7 +69,7 @@ class InvoicePdfServiceImpl implements InvoicePdfService {
                 y = drawAddresses(content, fontBold, fontRegular, invoice, y - 15f);
                 y = drawDivider(content, y - 10f);
                 y = drawItemsTable(content, fontBold, fontRegular, invoice.getItems(), y - 15f);
-                drawSummary(content, fontBold, fontRegular, invoice, y);
+                y = drawSummary(content, fontBold, fontRegular, invoice, y);
                 drawFooter(content, fontRegular);
             }
 
@@ -109,12 +109,30 @@ class InvoicePdfServiceImpl implements InvoicePdfService {
         final float dateX = PAGE_WIDTH - MARGIN - textWidth(fontRegular, FONT_SIZE_SMALL, dateText);
         writeText(content, fontRegular, FONT_SIZE_SMALL, dateX, y, dateText);
 
-        y -= LINE_HEIGHT_SECTION;
+        y -= LINE_HEIGHT_BODY;
 
-        // Customer name subtitle
+        // Exact timestamp of PDF generation
+        final java.time.ZonedDateTime now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Europe/Berlin"));
+        final String timeText = "Generated: " + now.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss z"));
+        final float timeX = PAGE_WIDTH - MARGIN - textWidth(fontRegular, FONT_SIZE_SMALL, timeText);
+        writeText(content, fontRegular, FONT_SIZE_SMALL, timeX, y, timeText);
+
+        // Customer name subtitle (drawn at first subtitle y level)
         final String customerName = invoice.getCustomer().getFirstName()
                 + " " + invoice.getCustomer().getLastName();
-        writeText(content, fontRegular, FONT_SIZE_BODY, MARGIN, y, "Customer: " + customerName);
+        writeText(content, fontRegular, FONT_SIZE_BODY, MARGIN, startY - LINE_HEIGHT_SECTION, "Customer: " + customerName);
+
+        y = startY - LINE_HEIGHT_SECTION - LINE_HEIGHT_BODY;
+
+        // Customer contact details (email & telephone)
+        if (invoice.getCustomer().getCommunicationDetails() != null) {
+            final String email = "Email: " + invoice.getCustomer().getCommunicationDetails().getEmail();
+            final String phone = "Phone: " + invoice.getCustomer().getCommunicationDetails().getTelephone();
+            writeText(content, fontRegular, FONT_SIZE_SMALL, MARGIN, y, email);
+            y -= LINE_HEIGHT_BODY;
+            writeText(content, fontRegular, FONT_SIZE_SMALL, MARGIN, y, phone);
+            y -= LINE_HEIGHT_BODY;
+        }
 
         return y;
     }
@@ -160,13 +178,13 @@ class InvoicePdfServiceImpl implements InvoicePdfService {
             final List<InvoiceItem> items,
             final float startY) throws IOException {
 
-        // Column widths (proportional to CONTENT_WIDTH)
+        // Column widths (proportional to CONTENT_WIDTH) - Contract ID gets more room to avoid truncation
         final float[] colWidths = {
-            CONTENT_WIDTH * 0.30f, // Service Plan
-            CONTENT_WIDTH * 0.25f, // Contract ID
-            CONTENT_WIDTH * 0.20f, // Purchase Date
-            CONTENT_WIDTH * 0.125f, // Setup Fee
-            CONTENT_WIDTH * 0.125f  // Monthly Fee
+            CONTENT_WIDTH * 0.22f, // Service Plan
+            CONTENT_WIDTH * 0.35f, // Contract ID (full UUID format takes 36 characters)
+            CONTENT_WIDTH * 0.15f, // Purchase Date
+            CONTENT_WIDTH * 0.14f, // Setup Fee
+            CONTENT_WIDTH * 0.14f  // Monthly Fee
         };
 
         float y = startY;
@@ -191,7 +209,7 @@ class InvoicePdfServiceImpl implements InvoicePdfService {
                         colWidths,
                         new String[]{
                             item.getProductName(),
-                            item.getContract().getId().toString().substring(0, 8) + "...",
+                            item.getContract().getId().toString(), // Full UUID format
                             item.getContractCreationDate().format(DATE_FORMATTER),
                             formatAmount(item.getSetupFee()),
                             formatAmount(item.getMonthlyFee())
@@ -204,7 +222,7 @@ class InvoicePdfServiceImpl implements InvoicePdfService {
         return y;
     }
 
-    private void drawSummary(
+    private float drawSummary(
             final PDPageContentStream content,
             final PDFont fontBold,
             final PDFont fontRegular,
@@ -226,11 +244,14 @@ class InvoicePdfServiceImpl implements InvoicePdfService {
                 labelX, valueX, y);
 
         drawDivider(content, y + 2f);
-        y -= 4f;
+        y -= 8f; // Add more spacing after the divider to avoid overlap
 
-        drawSummaryLine(content, fontBold, "Total Amount (" + CURRENCY_SYMBOL + "):",
+        y = drawSummaryLine(content, fontBold, "Total Amount (" + CURRENCY_SYMBOL + "):",
                 formatAmount(invoice.getTotalAmount()), labelX, valueX, y);
+
+        return y;
     }
+
 
     private void drawFooter(final PDPageContentStream content, final PDFont fontRegular) throws IOException {
         final String footerText = "This document was generated automatically. It is not a tax invoice.";

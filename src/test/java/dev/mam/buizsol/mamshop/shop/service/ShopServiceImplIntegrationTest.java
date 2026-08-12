@@ -12,6 +12,7 @@ import dev.mam.buizsol.mamshop.customer.model.Brand;
 import dev.mam.buizsol.mamshop.customer.model.CommunicationDetails;
 import dev.mam.buizsol.mamshop.customer.model.Customer;
 import dev.mam.buizsol.mamshop.customer.model.CustomerStatus;
+import dev.mam.buizsol.mamshop.contract.exception.ContractNotFoundException;
 import dev.mam.buizsol.mamshop.customer.service.KeycloakAdminService;
 import dev.mam.buizsol.mamshop.product.exception.ProductNotFoundException;
 import dev.mam.buizsol.mamshop.product.model.PremiumMailProduct;
@@ -68,12 +69,13 @@ class ShopServiceImplIntegrationTest {
                 ArgumentMatchers.anyString(),
                 ArgumentMatchers.anyString(),
                 ArgumentMatchers.anyString()))
-                .thenReturn(UUID.randomUUID());
+                .thenAnswer(invocation -> UUID.randomUUID());
 
         initializeProductIfNotExists("GMX Basic Mail", Brand.GMX, new BigDecimal("0.50"));
         initializeProductIfNotExists("MAIL_COM Basic Mail", Brand.MAIL_COM, new BigDecimal("0.50"));
         initializeProductIfNotExists("WEB_DE Basic Mail", Brand.WEB_DE, new BigDecimal("0.50"));
     }
+
 
     private void initializeProductIfNotExists(final String name, final Brand brand, final BigDecimal price) {
         if (shopService.loadAllProductsForBrand(brand).stream()
@@ -693,5 +695,90 @@ class ShopServiceImplIntegrationTest {
         assertFalse(gmxProducts.isEmpty());
         assertFalse(mailComProducts.isEmpty());
         assertFalse(webDeProducts.isEmpty());
+    }
+    @Test
+    @DisplayName("Positive - Terminate Contract: Successfully deactivates active contract")
+    void shouldTerminateContractWhenValidIdsProvided() throws Exception {
+        Customer customer = shopService.registerCustomer(createDefaultTestCustomer(
+                "John",
+                "Doe",
+                LocalDate.of(1990, 1, 1),
+                Brand.GMX,
+                createDefaultAddress("Street_", "1", "12345", "City_", "Country_"),
+                createDefaultAddress("Street_", "1", "12345", "City_", "Country_"),
+                createDefaultCommunicationDetails("user_@test-domain.com", "+49-123-456789")));
+
+        shopService.activateCustomer(customer.getId());
+        List<Product> products = shopService.loadAllProductsForBrand(Brand.GMX);
+        Product product = products.get(0);
+
+        Contract contract = shopService.purchaseProduct(customer.getId(), product.getId());
+        shopService.activateContract(customer.getId(), contract.getId());
+
+        // Verify it was activated
+        assertEquals(ContractStatus.ACTIVE, contract.getStatus());
+
+        // Terminate
+        shopService.terminateContract(customer.getId(), contract.getId());
+
+        // Verify status changed to INACTIVE
+        List<Contract> contracts = shopService.loadAllContracts(customer.getId());
+        Contract terminated = contracts.stream()
+                .filter(c -> c.getId().equals(contract.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(ContractStatus.INACTIVE, terminated.getStatus());
+    }
+
+    @Test
+    @DisplayName("Negative - Terminate Contract: Fails when contract belongs to another customer")
+    void shouldThrowExceptionWhenTerminatingContractOfAnotherCustomer() throws Exception {
+        Customer customer1 = shopService.registerCustomer(createDefaultTestCustomer(
+                "John",
+                "Doe",
+                LocalDate.of(1990, 1, 1),
+                Brand.GMX,
+                createDefaultAddress("Street_", "1", "12345", "City_", "Country_"),
+                createDefaultAddress("Street_", "1", "12345", "City_", "Country_"),
+                createDefaultCommunicationDetails("user1_@test-domain.com", "+49-123-456789")));
+        Customer customer2 = shopService.registerCustomer(createDefaultTestCustomer(
+                "Jane",
+                "Doe",
+                LocalDate.of(1990, 1, 1),
+                Brand.GMX,
+                createDefaultAddress("Street_", "2", "12345", "City_", "Country_"),
+                createDefaultAddress("Street_", "2", "12345", "City_", "Country_"),
+                createDefaultCommunicationDetails("user2_@test-domain.com", "+49-123-456789")));
+
+        shopService.activateCustomer(customer1.getId());
+        shopService.activateCustomer(customer2.getId());
+
+        List<Product> products = shopService.loadAllProductsForBrand(Brand.GMX);
+        Product product = products.get(0);
+
+        Contract contractOfCustomer1 = shopService.purchaseProduct(customer1.getId(), product.getId());
+
+        assertThrows(CustomerValidationException.class, () ->
+                shopService.terminateContract(customer2.getId(), contractOfCustomer1.getId())
+        );
+    }
+
+    @Test
+    @DisplayName("Negative - Terminate Contract: Fails for non-existent contract ID")
+    void shouldThrowExceptionWhenTerminatingNonExistentContract() throws Exception {
+        Customer customer = shopService.registerCustomer(createDefaultTestCustomer(
+                "John",
+                "Doe",
+                LocalDate.of(1990, 1, 1),
+                Brand.GMX,
+                createDefaultAddress("Street_", "1", "12345", "City_", "Country_"),
+                createDefaultAddress("Street_", "1", "12345", "City_", "Country_"),
+                createDefaultCommunicationDetails("user_@test-domain.com", "+49-123-456789")));
+        shopService.activateCustomer(customer.getId());
+        UUID randomContractId = UUID.randomUUID();
+
+        assertThrows(ContractNotFoundException.class, () ->
+                shopService.terminateContract(customer.getId(), randomContractId)
+        );
     }
 }

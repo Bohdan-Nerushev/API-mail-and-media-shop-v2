@@ -56,7 +56,10 @@ from controller.contracts_controller_end_to_end_api_test import (
     test_should_handle_contract_activation_idempotently_when_called_multiple_times,
     test_should_return_400_when_activating_contract_belonging_to_another_customer,
     test_should_return_409_when_listing_contracts_for_inactive_customer,
-    test_should_return_404_when_listing_contracts_for_deleted_customer
+    test_should_return_404_when_listing_contracts_for_deleted_customer,
+    test_should_terminate_contract_successfully_when_ids_are_valid,
+    test_should_return_404_when_terminating_non_existent_contract,
+    test_should_return_400_when_terminating_contract_belonging_to_another_customer
 )
 from controller.billings_controller_end_to_end_api_test import (
     test_should_successfully_generate_invoice_when_valid_customer_id_is_provided,
@@ -321,7 +324,16 @@ if __name__ == "__main__":
 
         test_should_return_400_when_activating_contract_belonging_to_another_customer(ANOTHER_CUSTOMER_ID, contract_id, BASE_URL_CONTRACTS, HEADERS)
 
+        # E2E Termination Tests
+        test_should_terminate_contract_successfully_when_ids_are_valid(customer_id, contract_id, BASE_URL_CONTRACTS, HEADERS)
+        
+        user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
+        HEADERS["Authorization"] = f"Bearer {user_token}"
+        test_should_return_400_when_terminating_contract_belonging_to_another_customer(ANOTHER_CUSTOMER_ID, contract_id, BASE_URL_CONTRACTS, HEADERS)
+
     test_should_return_404_when_activating_non_existent_contract(customer_id, BASE_URL_CONTRACTS, INVALID_CONTRACT_ID, HEADERS)
+    test_should_return_404_when_terminating_non_existent_contract(customer_id, BASE_URL_CONTRACTS, INVALID_CONTRACT_ID, HEADERS)
+
 
     # 10. Billing (Scenario 7)
     user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)

@@ -57,6 +57,9 @@ public interface ShopService {
     void activateContract(@NotNull UUID customerId, @NotNull UUID contractId)
             throws CustomerNotFoundException, ContractNotFoundException;
 
+    void terminateContract(@NotNull UUID customerId, @NotNull UUID contractId)
+            throws CustomerNotFoundException, ContractNotFoundException;
+
     @NotNull
     List<Product> loadAllProductsForBrand(@NotNull Brand brand);
 
