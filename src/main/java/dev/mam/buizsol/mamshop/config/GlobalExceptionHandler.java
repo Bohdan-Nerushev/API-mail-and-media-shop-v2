@@ -63,13 +63,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomerValidationException.class)
     public ResponseEntity<ErrorResponse> handleCustomerValidationException(CustomerValidationException ex) {
-        log.error("Customer validation failed for correlationId: {}", getCorrelationId(), ex);
+        log.error("Customer validation failed for correlationId: {}: {}", getCorrelationId(), ex.getMessage(), ex);
         captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
                         "CUSTOMER_VALIDATION_ERROR",
-                        "Customer validation failed",
+                        "Customer validation failed: " + ex.getMessage(),
                         LocalDateTime.now()));
     }
 
@@ -84,13 +84,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ProductValidationException.class)
     public ResponseEntity<ErrorResponse> handleProductValidationException(ProductValidationException ex) {
-        log.error("Product validation failed for correlationId: {}", getCorrelationId(), ex);
+        log.error("Product validation failed for correlationId: {}: {}", getCorrelationId(), ex.getMessage(), ex);
         captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
                         "PRODUCT_VALIDATION_ERROR",
-                        "Product validation failed",
+                        "Product validation failed: " + ex.getMessage(),
                         LocalDateTime.now()));
     }
 
@@ -105,13 +105,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ContractValidationException.class)
     public ResponseEntity<ErrorResponse> handleContractValidationException(ContractValidationException ex) {
-        log.error("Contract validation failed for correlationId: {}", getCorrelationId(), ex);
+        log.error("Contract validation failed for correlationId: {}: {}", getCorrelationId(), ex.getMessage(), ex);
         captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
                         "CONTRACT_VALIDATION_ERROR",
-                        "Contract validation failed",
+                        "Contract validation failed: " + ex.getMessage(),
                         LocalDateTime.now()));
     }
 
@@ -134,13 +134,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvoiceValidationException.class)
     public ResponseEntity<ErrorResponse> handleInvoiceValidationException(InvoiceValidationException ex) {
-        log.error("Invoice validation failed for correlationId: {}", getCorrelationId(), ex);
+        log.error("Invoice validation failed for correlationId: {}: {}", getCorrelationId(), ex.getMessage(), ex);
         captureSentry(ex);
         return ResponseEntity.status(400)
                 .body(new ErrorResponse(
                         getCorrelationId(),
                         "INVOICE_VALIDATION_ERROR",
-                        "Invoice validation failed",
+                        "Invoice validation failed: " + ex.getMessage(),
                         LocalDateTime.now()));
     }
 
