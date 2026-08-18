@@ -98,7 +98,24 @@ public class KeycloakAdminService {
             }
             throw new CustomerValidationException("Keycloak returned status: " + response.getStatusCode());
         } catch (final HttpClientErrorException.Conflict e) {
-            log.warn("Keycloak conflict - user already exists: {}", email);
+            log.info("Keycloak conflict - user already exists: {}. Fetching existing ID.", email);
+            try {
+                final ResponseEntity<List> existingUsers = restClient
+                        .get()
+                        .uri("/admin/realms/{realm}/users?email={email}", realm, email)
+                        .header("Authorization", "Bearer " + adminToken)
+                        .retrieve()
+                        .toEntity(List.class);
+
+                if (existingUsers.getBody() != null && !existingUsers.getBody().isEmpty()) {
+                    final Map<String, Object> existingUser = (Map<String, Object>) existingUsers.getBody().get(0);
+                    final String userIdStr = (String) existingUser.get("id");
+                    log.info("User already exists in Keycloak, using existing ID: {}", userIdStr);
+                    return UUID.fromString(userIdStr);
+                }
+            } catch (final Exception ex) {
+                log.error("Failed to fetch existing user from Keycloak after conflict", ex);
+            }
             throw new CustomerValidationException("User with email " + email + " already exists in Keycloak");
         } catch (final Exception e) {
             log.error("Failed to create user in Keycloak", e);

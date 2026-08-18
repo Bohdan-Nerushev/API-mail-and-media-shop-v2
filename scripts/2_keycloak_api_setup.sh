@@ -37,10 +37,7 @@ echo "--------------------------------------------------"
 # --------------------------------------------------
 echo "[01] Validating required environment variables..."
 
-if [ -z "$CLIENT_SECRET" ]; then
-  echo "❌ KC_CLIENT_SECRET is not set"
-  exit 1
-fi
+# CLIENT_SECRET validation is removed because the client is now public
 
 if [ -z "${KEYCLOAK_DB_USER:-}" ] || [ -z "${KEYCLOAK_DB_NAME:-}" ]; then
   echo "❌ KEYCLOAK_DB_USER or KEYCLOAK_DB_NAME is not set"
@@ -212,10 +209,9 @@ CLIENT_CREATE_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$KC_U
     \"clientId\": \"$CLIENT_ID\",
     \"enabled\": true,
     \"protocol\": \"openid-connect\",
-    \"publicClient\": false,
-    \"secret\": \"$CLIENT_SECRET\",
+    \"publicClient\": true,
     \"directAccessGrantsEnabled\": true,
-    \"serviceAccountsEnabled\": true,
+    \"standardFlowEnabled\": true,
     \"redirectUris\": [\"*\"],
     \"webOrigins\": [\"*\"]
   }")
