@@ -79,10 +79,13 @@ from controller.products_controller_end_to_end_api_test import (
 )
 from get_user_token_to_test import get_user_token
 from load_test import LoadTestRunner
+from controller.sso_end_to_end_test import test_sso_integration
 
 # ---------------------------
 # Configuration (Environment Variables)
 # ---------------------------
+
+STORAGE_URL = os.getenv("STORAGE_APP_URL", "http://localhost:8080")
 
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -380,7 +383,18 @@ if __name__ == "__main__":
     # 12. Final checks after deletion
     user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
     HEADERS["Authorization"] = f"Bearer {user_token}"
-    test_should_return_404_when_listing_contracts_for_deleted_customer(customer_id, BASE_URL_SHOP_CONTRACTS, HEADERS)
+    # 12b. SSO Integration Testing
+    test_sso_integration(
+        kc_url=KC_URL,
+        realm=KC_REALM,
+        client_id=KC_CLIENT_ID,
+        client_secret=KC_CLIENT_SECRET,
+        username=KC_USERNAME,
+        password=KC_PASSWORD,
+        api_url=APP_URL,
+        storage_url=STORAGE_URL,
+        token_helper_fn=get_user_token
+    )
 
     # 13. Load Testing (Optional or scaled down for regular E2E)
     logger.info("=== Starting Load Test Phase ===")

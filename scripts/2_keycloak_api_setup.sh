@@ -288,6 +288,40 @@ else
 fi
 
 # --------------------------------------------------
+# [12b] ADD STORAGE-SERVICE AUDIENCE MAPPER TO CLIENT
+# --------------------------------------------------
+echo "[12b] Adding storage-service audience mapper to client..."
+
+AUD_MAPPER_CREATE_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$KC_URL/admin/realms/$REALM/clients/$CLIENT_UUID/protocol-mappers/models" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"name\": \"storage-service audience mapper\",
+    \"protocol\": \"openid-connect\",
+    \"protocolMapper\": \"oidc-audience-mapper\",
+    \"config\": {
+      \"included.client.audience\": \"storage-service-app\",
+      \"id.token.claim\": \"false\",
+      \"access.token.claim\": \"true\"
+    }
+  }")
+
+AUD_MAPPER_CREATE_BODY=$(printf '%s' "$AUD_MAPPER_CREATE_RESPONSE" | sed '$d')
+AUD_MAPPER_CREATE_STATUS=$(printf '%s' "$AUD_MAPPER_CREATE_RESPONSE" | tail -n1 | sed 's/HTTP_STATUS://')
+
+if [ "$AUD_MAPPER_CREATE_STATUS" = "201" ]; then
+  echo "✅ Storage-service audience mapper added"
+elif [ "$AUD_MAPPER_CREATE_STATUS" = "409" ]; then
+  echo "⚠️ Storage-service audience mapper already exists"
+  [ -n "$AUD_MAPPER_CREATE_BODY" ] && (echo "$AUD_MAPPER_CREATE_BODY" | jq . 2>/dev/null || echo "$AUD_MAPPER_CREATE_BODY")
+else
+  echo "❌ Failed to add storage-service audience mapper"
+  echo "HTTP status: $AUD_MAPPER_CREATE_STATUS"
+  [ -n "$AUD_MAPPER_CREATE_BODY" ] && (echo "$AUD_MAPPER_CREATE_BODY" | jq . 2>/dev/null || echo "$AUD_MAPPER_CREATE_BODY")
+  exit 1
+fi
+
+# --------------------------------------------------
 # [13] SET USER ROLE AS DEFAULT FOR NEW USERS
 # --------------------------------------------------
 echo "[13] Setting USER as default role for all new users..."
