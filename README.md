@@ -1404,7 +1404,7 @@ docker system prune -f
 
 ## GitLab CI/CD Variables Automation
 
-The project includes an automated script [`scripts/upload_gitlab_variables.sh`](file:///home/bnerushev/Schreibtisch/Project/mail-and-media-shop-v2/scripts/upload_gitlab_variables.sh) to sync environment variables from your local `.env` file directly to GitLab CI/CD Variables via the GitLab REST API (`https://git.mam.dev/api/v4/projects`).
+The project includes an automated script [`scripts/upload_gitlab_variables.sh`](file:///home/bnerushev/Schreibtisch/Project/ALL-mail-and-media-shop-v2/API-mail-and-media-shop-v2/scripts/upload_gitlab_variables.sh) to sync environment variables from your local `.env` file directly to GitLab CI/CD Variables via the GitLab REST API (`https://git.mam.dev/api/v4/projects`).
 
 ### Prerequisites
 1. A valid `.env` file in the project root directory. If `.env` is missing, the script will abort with an error message:
@@ -1425,3 +1425,33 @@ GITLAB_TOKEN=your_personal_access_token ./scripts/upload_gitlab_variables.sh
 * **Dynamic `.env` Parsing**: Automatically reads all non-empty key-value pairs from `.env` (skipping comments and empty lines).
 * **Idempotent Execution**: Attempts to create each variable (`POST`). If the variable already exists in GitLab, it updates its value (`PUT`).
 * **Environment Overrides**: Supports overriding `GITLAB_URL` (default: `https://git.mam.dev`) and `PROJECT_PATH` (default: `bnerushev%2Fmail-and-media-shop-v2`).
+
+---
+
+## GitHub Actions Secrets Automation
+
+The project includes an automated script [`scripts/upload_github_secrets.sh`](file:///home/bnerushev/Schreibtisch/Project/ALL-mail-and-media-shop-v2/API-mail-and-media-shop-v2/scripts/upload_github_secrets.sh) to upload necessary repository secrets from your local `.env` file directly to GitHub using the GitHub CLI (`gh`).
+
+### Prerequisites
+1. A valid `.env` file in the project root directory.
+2. GitHub CLI (`gh`) installed on your system.
+3. Authenticated GitHub session (`gh auth login`).
+
+### Usage
+
+1. Check if `gh` is installed:
+   ```bash
+   gh --version
+   ```
+2. Log in to your GitHub account:
+   ```bash
+   gh auth login
+   ```
+3. Run the upload script:
+   ```bash
+   ./scripts/upload_github_secrets.sh
+   ```
+
+### Features
+* **Filtered Secret Upload**: Uploads only the allowed keys required by the CI/CD workflows, ignoring auxiliary and monitoring variables to save GitHub secrets quota.
+* **Non-empty validation**: Automatically skips empty configuration keys.
