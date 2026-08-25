@@ -1,0 +1,322 @@
+name: Java CI — Unit Tests & E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "bugfix/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # ============================================================
+  # JOB 1: Build & Unit Tests
+  # Redis is provided as a service container on the same network
+  # ============================================================
+  unit-tests:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: "temurin"
+          cache: maven
+
+      # All sensitive values are injected from GitHub Secrets.
+      # The .env file is written at runtime only — never committed to the repo.
+      - name: Write .env from GitHub Secrets
+        env:
+          # --- Application ---
+          APP_PORT: ${{ secrets.APP_PORT }}
+          APP_HOST: ${{ secrets.APP_HOST }}
+          APP_IMAGE_NAME: ${{ secrets.APP_IMAGE_NAME }}
+          APP_CONTAINER_NAME: ${{ secrets.APP_CONTAINER_NAME }}
+          IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+          # --- Shop Database ---
+          POSTGRES_IMAGE_VERSION: ${{ secrets.POSTGRES_IMAGE_VERSION }}
+          SHOP_DB_CONTAINER_NAME: ${{ secrets.SHOP_DB_CONTAINER_NAME }}
+          SHOP_DB_NAME: ${{ secrets.SHOP_DB_NAME }}
+          SHOP_DB_USER: ${{ secrets.SHOP_DB_USER }}
+          SHOP_DB_PASSWORD: ${{ secrets.SHOP_DB_PASSWORD }}
+          SHOP_DB_PORT: ${{ secrets.SHOP_DB_PORT }}
+          # --- Redis ---
+          SHOP_REDIS_CONTAINER_NAME: ${{ secrets.SHOP_REDIS_CONTAINER_NAME }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          # --- Keycloak ---
+          KEYCLOAK_PORT: ${{ secrets.KEYCLOAK_PORT }}
+          KEYCLOAK_HTTPS_PORT: ${{ secrets.KEYCLOAK_HTTPS_PORT }}
+          KC_URL: ${{ secrets.KC_URL }}
+          KC_REALM: ${{ secrets.KC_REALM }}
+          KC_BOOTSTRAP_ADMIN_USERNAME: ${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}
+          KC_BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}
+          KC_ADMIN_USER: ${{ secrets.KC_ADMIN_USER }}
+          KC_ADMIN_PASS: ${{ secrets.KC_ADMIN_PASS }}
+          KC_CLIENT_ID: ${{ secrets.KC_CLIENT_ID }}
+          KC_CLIENT_SECRET: ${{ secrets.KC_CLIENT_SECRET }}
+          KC_GRANT_TYPE: ${{ secrets.KC_GRANT_TYPE }}
+          KC_USERNAME: ${{ secrets.KC_USERNAME }}
+          KC_PASSWORD: ${{ secrets.KC_PASSWORD }}
+          # --- Keycloak DB ---
+          KEYCLOAK_DB_IMAGE_VERSION: ${{ secrets.KEYCLOAK_DB_IMAGE_VERSION }}
+          KEYCLOAK_DB_CONTAINER_NAME: ${{ secrets.KEYCLOAK_DB_CONTAINER_NAME }}
+          KEYCLOAK_DB_NAME: ${{ secrets.KEYCLOAK_DB_NAME }}
+          KEYCLOAK_DB_USER: ${{ secrets.KEYCLOAK_DB_USER }}
+          KEYCLOAK_DB_PASSWORD: ${{ secrets.KEYCLOAK_DB_PASSWORD }}
+          KEYCLOAK_DB_PORT: ${{ secrets.KEYCLOAK_DB_PORT }}
+          # --- Security & JWT ---
+          JWT_ISSUER: ${{ secrets.JWT_ISSUER }}
+          JWT_EXPIRATION_MS: ${{ secrets.JWT_EXPIRATION_MS }}
+          JWT_EXPECTED_AUDIENCE: ${{ secrets.JWT_EXPECTED_AUDIENCE }}
+          TRUSTSTORE_PASSWORD: ${{ secrets.TRUSTSTORE_PASSWORD }}
+          # --- Test User ---
+          USER_NAME: ${{ secrets.USER_NAME }}
+          USER_EMAIL: ${{ secrets.USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+        run: |
+          # Write environment file from injected secrets.
+          # Each variable is written only if the secret is non-empty.
+          write_env_var() {
+            local key="$1"
+            local val="$2"
+            if [ -n "$val" ]; then
+              printf '%s=%s\n' "$key" "$val" >> .env
+            fi
+          }
+
+          : > .env
+
+          write_env_var APP_PORT                    "$APP_PORT"
+          write_env_var APP_HOST                    "$APP_HOST"
+          write_env_var APP_IMAGE_NAME              "$APP_IMAGE_NAME"
+          write_env_var APP_CONTAINER_NAME          "$APP_CONTAINER_NAME"
+          write_env_var IMAGE_NAME                  "$IMAGE_NAME"
+          write_env_var POSTGRES_IMAGE_VERSION      "$POSTGRES_IMAGE_VERSION"
+          write_env_var SHOP_DB_CONTAINER_NAME      "$SHOP_DB_CONTAINER_NAME"
+          write_env_var SHOP_DB_NAME                "$SHOP_DB_NAME"
+          write_env_var SHOP_DB_USER                "$SHOP_DB_USER"
+          write_env_var SHOP_DB_PASSWORD            "$SHOP_DB_PASSWORD"
+          write_env_var SHOP_DB_PORT                "$SHOP_DB_PORT"
+          write_env_var SHOP_REDIS_CONTAINER_NAME   "$SHOP_REDIS_CONTAINER_NAME"
+          write_env_var REDIS_PORT                  "$REDIS_PORT"
+          write_env_var KEYCLOAK_PORT               "$KEYCLOAK_PORT"
+          write_env_var KEYCLOAK_HTTPS_PORT         "$KEYCLOAK_HTTPS_PORT"
+          write_env_var KC_URL                      "$KC_URL"
+          write_env_var KC_REALM                    "$KC_REALM"
+          write_env_var KC_BOOTSTRAP_ADMIN_USERNAME "$KC_BOOTSTRAP_ADMIN_USERNAME"
+          write_env_var KC_BOOTSTRAP_ADMIN_PASSWORD "$KC_BOOTSTRAP_ADMIN_PASSWORD"
+          write_env_var KC_ADMIN_USER               "$KC_ADMIN_USER"
+          write_env_var KC_ADMIN_PASS               "$KC_ADMIN_PASS"
+          write_env_var KC_CLIENT_ID                "$KC_CLIENT_ID"
+          write_env_var KC_CLIENT_SECRET            "$KC_CLIENT_SECRET"
+          write_env_var KC_GRANT_TYPE               "$KC_GRANT_TYPE"
+          write_env_var KC_USERNAME                 "$KC_USERNAME"
+          write_env_var KC_PASSWORD                 "$KC_PASSWORD"
+          write_env_var KEYCLOAK_DB_IMAGE_VERSION   "$KEYCLOAK_DB_IMAGE_VERSION"
+          write_env_var KEYCLOAK_DB_CONTAINER_NAME  "$KEYCLOAK_DB_CONTAINER_NAME"
+          write_env_var KEYCLOAK_DB_NAME            "$KEYCLOAK_DB_NAME"
+          write_env_var KEYCLOAK_DB_USER            "$KEYCLOAK_DB_USER"
+          write_env_var KEYCLOAK_DB_PASSWORD        "$KEYCLOAK_DB_PASSWORD"
+          write_env_var KEYCLOAK_DB_PORT            "$KEYCLOAK_DB_PORT"
+          write_env_var JWT_ISSUER                  "$JWT_ISSUER"
+          write_env_var JWT_EXPIRATION_MS           "$JWT_EXPIRATION_MS"
+          write_env_var JWT_EXPECTED_AUDIENCE       "$JWT_EXPECTED_AUDIENCE"
+          write_env_var TRUSTSTORE_PASSWORD         "$TRUSTSTORE_PASSWORD"
+          write_env_var USER_NAME                   "$USER_NAME"
+          write_env_var USER_EMAIL                  "$USER_EMAIL"
+          write_env_var USER_PASSWORD               "$USER_PASSWORD"
+
+          echo ".env written (contents masked for security)"
+
+      - name: Generate Keycloak SSL Certificates
+        run: |
+          mkdir -p certs
+          touch certs/keycloak-cert.pem certs/keycloak-key.pem certs/truststore.jks
+          openssl req -x509 -newkey rsa:4096 -nodes -sha256 \
+            -keyout certs/keycloak-key.pem \
+            -out certs/keycloak-cert.pem \
+            -subj "/CN=keycloak" \
+            -days 365 \
+            -addext "basicConstraints=critical,CA:TRUE" \
+            -addext "subjectAltName=DNS:keycloak,DNS:localhost,IP:127.0.0.1"
+          keytool -importcert -noprompt \
+            -keystore certs/truststore.jks \
+            -storepass "${{ secrets.TRUSTSTORE_PASSWORD || 'changeit' }}" \
+            -alias keycloak \
+            -file certs/keycloak-cert.pem
+
+      - name: Start Docker Compose services for tests
+        run: |
+          docker compose up -d keycloak-db keycloak shop-db shop-redis
+          docker compose up -d keycloak-setup
+          echo "Waiting for Keycloak configuration setup to complete..."
+          docker wait keycloak-setup
+
+      - name: Run Maven Build & Unit Tests
+        env:
+          REDIS_HOST: localhost
+        run: mvn clean install --no-transfer-progress
+
+      - name: Stop Docker Compose services
+        if: always()
+        run: docker compose down -v
+
+  # ============================================================
+  # JOB 2: E2E Tests
+  # Runs the full Docker Compose stack via existing shell scripts
+  # ============================================================
+  e2e-tests:
+    name: E2E Tests (Docker Compose Stack)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: "25"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: e2e_tests/requirements.txt
+
+      - name: Install Python dependencies
+        run: pip install -r e2e_tests/requirements.txt
+
+      # Maven build without tests — image is needed for docker compose up --build
+      - name: Build JAR (skip tests)
+        run: mvn package -DskipTests --no-transfer-progress
+
+      - name: Write .env from GitHub Secrets
+        env:
+          # --- Application ---
+          APP_PORT: ${{ secrets.APP_PORT }}
+          APP_HOST: ${{ secrets.APP_HOST }}
+          APP_IMAGE_NAME: ${{ secrets.APP_IMAGE_NAME }}
+          APP_CONTAINER_NAME: ${{ secrets.APP_CONTAINER_NAME }}
+          IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+          # --- Shop Database ---
+          POSTGRES_IMAGE_VERSION: ${{ secrets.POSTGRES_IMAGE_VERSION }}
+          SHOP_DB_CONTAINER_NAME: ${{ secrets.SHOP_DB_CONTAINER_NAME }}
+          SHOP_DB_NAME: ${{ secrets.SHOP_DB_NAME }}
+          SHOP_DB_USER: ${{ secrets.SHOP_DB_USER }}
+          SHOP_DB_PASSWORD: ${{ secrets.SHOP_DB_PASSWORD }}
+          SHOP_DB_PORT: ${{ secrets.SHOP_DB_PORT }}
+          # --- Redis ---
+          SHOP_REDIS_CONTAINER_NAME: ${{ secrets.SHOP_REDIS_CONTAINER_NAME }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          # --- Keycloak ---
+          KEYCLOAK_PORT: ${{ secrets.KEYCLOAK_PORT }}
+          KEYCLOAK_HTTPS_PORT: ${{ secrets.KEYCLOAK_HTTPS_PORT }}
+          KC_URL: ${{ secrets.KC_URL }}
+          KC_REALM: ${{ secrets.KC_REALM }}
+          KC_BOOTSTRAP_ADMIN_USERNAME: ${{ secrets.KC_BOOTSTRAP_ADMIN_USERNAME }}
+          KC_BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.KC_BOOTSTRAP_ADMIN_PASSWORD }}
+          KC_ADMIN_USER: ${{ secrets.KC_ADMIN_USER }}
+          KC_ADMIN_PASS: ${{ secrets.KC_ADMIN_PASS }}
+          KC_CLIENT_ID: ${{ secrets.KC_CLIENT_ID }}
+          KC_CLIENT_SECRET: ${{ secrets.KC_CLIENT_SECRET }}
+          KC_GRANT_TYPE: ${{ secrets.KC_GRANT_TYPE }}
+          KC_USERNAME: ${{ secrets.KC_USERNAME }}
+          KC_PASSWORD: ${{ secrets.KC_PASSWORD }}
+          # --- Keycloak DB ---
+          KEYCLOAK_DB_IMAGE_VERSION: ${{ secrets.KEYCLOAK_DB_IMAGE_VERSION }}
+          KEYCLOAK_DB_CONTAINER_NAME: ${{ secrets.KEYCLOAK_DB_CONTAINER_NAME }}
+          KEYCLOAK_DB_NAME: ${{ secrets.KEYCLOAK_DB_NAME }}
+          KEYCLOAK_DB_USER: ${{ secrets.KEYCLOAK_DB_USER }}
+          KEYCLOAK_DB_PASSWORD: ${{ secrets.KEYCLOAK_DB_PASSWORD }}
+          KEYCLOAK_DB_PORT: ${{ secrets.KEYCLOAK_DB_PORT }}
+          # --- Security & JWT ---
+          JWT_ISSUER: ${{ secrets.JWT_ISSUER }}
+          JWT_EXPIRATION_MS: ${{ secrets.JWT_EXPIRATION_MS }}
+          JWT_EXPECTED_AUDIENCE: ${{ secrets.JWT_EXPECTED_AUDIENCE }}
+          TRUSTSTORE_PASSWORD: ${{ secrets.TRUSTSTORE_PASSWORD }}
+          # --- Test User ---
+          USER_NAME: ${{ secrets.USER_NAME }}
+          USER_EMAIL: ${{ secrets.USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+        run: |
+          write_env_var() {
+            local key="$1"
+            local val="$2"
+            if [ -n "$val" ]; then
+              printf '%s=%s\n' "$key" "$val" >> .env
+            fi
+          }
+
+          : > .env
+
+          write_env_var APP_PORT                    "$APP_PORT"
+          write_env_var APP_HOST                    "$APP_HOST"
+          write_env_var APP_IMAGE_NAME              "$APP_IMAGE_NAME"
+          write_env_var APP_CONTAINER_NAME          "$APP_CONTAINER_NAME"
+          write_env_var IMAGE_NAME                  "$IMAGE_NAME"
+          write_env_var POSTGRES_IMAGE_VERSION      "$POSTGRES_IMAGE_VERSION"
+          write_env_var SHOP_DB_CONTAINER_NAME      "$SHOP_DB_CONTAINER_NAME"
+          write_env_var SHOP_DB_NAME                "$SHOP_DB_NAME"
+          write_env_var SHOP_DB_USER                "$SHOP_DB_USER"
+          write_env_var SHOP_DB_PASSWORD            "$SHOP_DB_PASSWORD"
+          write_env_var SHOP_DB_PORT                "$SHOP_DB_PORT"
+          write_env_var SHOP_REDIS_CONTAINER_NAME   "$SHOP_REDIS_CONTAINER_NAME"
+          write_env_var REDIS_PORT                  "$REDIS_PORT"
+          write_env_var KEYCLOAK_PORT               "$KEYCLOAK_PORT"
+          write_env_var KEYCLOAK_HTTPS_PORT         "$KEYCLOAK_HTTPS_PORT"
+          write_env_var KC_URL                      "$KC_URL"
+          write_env_var KC_REALM                    "$KC_REALM"
+          write_env_var KC_BOOTSTRAP_ADMIN_USERNAME "$KC_BOOTSTRAP_ADMIN_USERNAME"
+          write_env_var KC_BOOTSTRAP_ADMIN_PASSWORD "$KC_BOOTSTRAP_ADMIN_PASSWORD"
+          write_env_var KC_ADMIN_USER               "$KC_ADMIN_USER"
+          write_env_var KC_ADMIN_PASS               "$KC_ADMIN_PASS"
+          write_env_var KC_CLIENT_ID                "$KC_CLIENT_ID"
+          write_env_var KC_CLIENT_SECRET            "$KC_CLIENT_SECRET"
+          write_env_var KC_GRANT_TYPE               "$KC_GRANT_TYPE"
+          write_env_var KC_USERNAME                 "$KC_USERNAME"
+          write_env_var KC_PASSWORD                 "$KC_PASSWORD"
+          write_env_var KEYCLOAK_DB_IMAGE_VERSION   "$KEYCLOAK_DB_IMAGE_VERSION"
+          write_env_var KEYCLOAK_DB_CONTAINER_NAME  "$KEYCLOAK_DB_CONTAINER_NAME"
+          write_env_var KEYCLOAK_DB_NAME            "$KEYCLOAK_DB_NAME"
+          write_env_var KEYCLOAK_DB_USER            "$KEYCLOAK_DB_USER"
+          write_env_var KEYCLOAK_DB_PASSWORD        "$KEYCLOAK_DB_PASSWORD"
+          write_env_var KEYCLOAK_DB_PORT            "$KEYCLOAK_DB_PORT"
+          write_env_var JWT_ISSUER                  "$JWT_ISSUER"
+          write_env_var JWT_EXPIRATION_MS           "$JWT_EXPIRATION_MS"
+          write_env_var JWT_EXPECTED_AUDIENCE       "$JWT_EXPECTED_AUDIENCE"
+          write_env_var TRUSTSTORE_PASSWORD         "$TRUSTSTORE_PASSWORD"
+          write_env_var USER_NAME                   "$USER_NAME"
+          write_env_var USER_EMAIL                  "$USER_EMAIL"
+          write_env_var USER_PASSWORD               "$USER_PASSWORD"
+
+          echo ".env written (contents masked for security)"
+
+      - name: Run E2E Docker Compose Setup
+        run: |
+          chmod +x scripts/1_docker-e2e-setup.sh
+          ./scripts/1_docker-e2e-setup.sh
+
+      - name: Run E2E Tests
+        run: |
+          chmod +x scripts/3_e2e-test-runner.sh
+          ./scripts/3_e2e-test-runner.sh
+
+      - name: Upload container & application logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs-${{ github.run_number }}
+          path: logs/
+          retention-days: 7
