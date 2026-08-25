@@ -105,4 +105,35 @@ class ContractControllerTest {
 
         verify(shopService).activateContract(customerId, contractId);
     }
+
+    @Test
+    @DisplayName(value = "Positive: should terminate contract successfully when IDs are valid")
+    void shouldTerminateContractSuccessfully() throws Exception {
+        final UUID customerId = UUID.randomUUID();
+        final UUID contractId = UUID.randomUUID();
+        doNothing().when(shopService).terminateContract(customerId, contractId);
+
+        mockMvc.perform(put("/api/v1/contracts/{contractId}/{customerId}/terminate", contractId, customerId))
+                .andExpect(status().isNoContent());
+
+        verify(shopService).terminateContract(customerId, contractId);
+    }
+
+    @Test
+    @DisplayName(value = "Negative: should return 404 when contract not found during termination")
+    void shouldReturn404WhenContractNotFoundDuringTermination() throws Exception {
+        final UUID customerId = UUID.randomUUID();
+        final UUID contractId = UUID.randomUUID();
+
+        doThrow(new ContractNotFoundException("Contract not found"))
+                .when(shopService)
+                .terminateContract(any(UUID.class), any(UUID.class));
+
+        mockMvc.perform(put("/api/v1/contracts/{contractId}/{customerId}/terminate", contractId, customerId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode", is("CONTRACT_NOT_FOUND")))
+                .andExpect(jsonPath("$.message", is("Contract not found")));
+
+        verify(shopService).terminateContract(customerId, contractId);
+    }
 }

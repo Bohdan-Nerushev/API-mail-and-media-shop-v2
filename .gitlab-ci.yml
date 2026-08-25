@@ -24,7 +24,7 @@ unit_test_job:
   variables:
     REDIS_HOST: redis
   services:
-    - name: redis:7.0-alpine
+    - name: redis:8.10-alpine
       alias: redis
   script:
     - mvn clean install
@@ -53,6 +53,7 @@ package_job:
   script:
     - chmod +x scripts/4_docker-package.sh
     - ./scripts/4_docker-package.sh
+  when: manual   
   tags:
     - maven
 

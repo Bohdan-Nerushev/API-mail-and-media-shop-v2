@@ -13,6 +13,7 @@ import dev.mam.buizsol.mamshop.product.exception.ProductNotFoundException;
 import dev.mam.buizsol.mamshop.product.model.Product;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
@@ -26,6 +27,9 @@ public interface ShopService {
 
     @NotNull
     Customer loadCustomer(@NotNull UUID customerId) throws CustomerNotFoundException;
+
+    @NotNull
+    Customer loadCustomerByJwt(@NotNull Jwt jwt) throws CustomerNotFoundException;
 
     void removeCustomer(@NotNull UUID customerId) throws CustomerNotFoundException;
 
@@ -51,6 +55,9 @@ public interface ShopService {
     Invoice generateInvoice(@NotNull UUID customerId) throws CustomerNotFoundException, ProductNotFoundException;
 
     void activateContract(@NotNull UUID customerId, @NotNull UUID contractId)
+            throws CustomerNotFoundException, ContractNotFoundException;
+
+    void terminateContract(@NotNull UUID customerId, @NotNull UUID contractId)
             throws CustomerNotFoundException, ContractNotFoundException;
 
     @NotNull

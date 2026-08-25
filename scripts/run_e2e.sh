@@ -123,19 +123,21 @@ if [ -z "$PYTHON_EXEC" ]; then
     error_exit "Python 3 not found."
 fi
 
-if [ ! -d "$VENV_DIR" ]; then
+if [ ! -d "$VENV_DIR" ] || [ ! -f "$VENV_DIR/bin/python3" ]; then
     log_info "Creating virtual environment..."
+    rm -rf "$VENV_DIR"
     $PYTHON_EXEC -m venv "$VENV_DIR" || error_exit "Venv creation failed."
 fi
 
 log_info "Activating venv and installing requirements..."
-source "$VENV_DIR/bin/activate" || error_exit "Venv activation failed."
-pip install -r "$PROJECT_ROOT/e2e_tests/requirements.txt" --quiet || error_exit "Pip install failed."
+source "$VENV_DIR/bin/activate" 2>/dev/null || true
+"$VENV_DIR/bin/python3" -m ensurepip 2>/dev/null || true
+"$VENV_DIR/bin/python3" -m pip install -r "$PROJECT_ROOT/e2e_tests/requirements.txt" --break-system-packages --quiet || pip install -r "$PROJECT_ROOT/e2e_tests/requirements.txt" --break-system-packages --quiet || error_exit "Pip install failed."
 
 log_info "Executing Python E2E tests..."
 export PYTHONPATH="$PROJECT_ROOT/e2e_tests"
 
-python3 "$PROJECT_ROOT/e2e_tests/main.py"
+"$VENV_DIR/bin/python3" "$PROJECT_ROOT/e2e_tests/main.py"
 TEST_EXIT_CODE=$?
 
 # ==============================================================================

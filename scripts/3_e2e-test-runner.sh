@@ -67,12 +67,17 @@ fi
 
 if [ ! -d "$VENV_DIR" ]; then
     log_info "Creating virtual environment..."
-    $PYTHON_EXEC -m venv "$VENV_DIR" || error_exit "Venv creation failed."
+    $PYTHON_EXEC -m venv "$VENV_DIR" 2>/dev/null || true
 fi
 
-log_info "Activating venv and installing requirements..."
-source "$VENV_DIR/bin/activate" || error_exit "Venv activation failed."
-pip install -r "$PROJECT_ROOT/e2e_tests/requirements.txt" --quiet || error_exit "Pip install failed."
+if [ -f "$VENV_DIR/bin/activate" ]; then
+    source "$VENV_DIR/bin/activate" 2>/dev/null || true
+fi
+
+log_info "Installing requirements..."
+$PYTHON_EXEC -m pip install -r "$PROJECT_ROOT/e2e_tests/requirements.txt" --break-system-packages --quiet 2>/dev/null || \
+$PYTHON_EXEC -m pip install -r "$PROJECT_ROOT/e2e_tests/requirements.txt" --quiet || \
+pip3 install -r "$PROJECT_ROOT/e2e_tests/requirements.txt" --break-system-packages --quiet || error_exit "Pip install failed."
 
 log_info "Waiting 10 seconds for services to stabilize..."
 sleep 10
@@ -80,7 +85,7 @@ sleep 10
 log_info "Executing Python E2E tests..."
 export PYTHONPATH="$PROJECT_ROOT/e2e_tests"
 
-python3 "$PROJECT_ROOT/e2e_tests/main.py"
+$PYTHON_EXEC "$PROJECT_ROOT/e2e_tests/main.py"
 TEST_EXIT_CODE=$?
 
 # ==============================================================================
@@ -108,5 +113,11 @@ if [ -d "$PROJECT_ROOT/logs" ]; then
     log_info "Fixing log file permissions for GitLab CI artifact upload..."
     docker run --rm -v "$PROJECT_ROOT/logs:/logs" docker:cli chmod -R 777 /logs 2>/dev/null || true
 fi
+
+#==============================================================================
+# PHASE 6:STOP THE DOCKER-COMPOSESTACK
+#==============================================================================
+docker compose down -v 
+
 
 exit $TEST_EXIT_CODE

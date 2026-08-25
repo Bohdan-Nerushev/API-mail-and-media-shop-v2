@@ -26,8 +26,16 @@ load_env_safe() {
 
 # Run it for the project root .env
 if [ -n "$PROJECT_ROOT" ]; then
+    if [ ! -f "$PROJECT_ROOT/.env" ] && [ -f "$PROJECT_ROOT/.env.example" ]; then
+        log_info "No .env file found. Creating .env from .env.example"
+        cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env" 2>/dev/null || true
+    fi
     load_env_safe "$PROJECT_ROOT/.env"
 else
+    if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+        log_info "No .env file found. Creating .env from .env.example"
+        cp ".env.example" ".env" 2>/dev/null || true
+    fi
     load_env_safe ".env"
 fi
 

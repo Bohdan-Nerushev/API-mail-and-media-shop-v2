@@ -64,4 +64,38 @@ public class ContractController {
         shopService.activateContract(customerId, contractId);
         log.info("Contract activated successfully: {}", contractId);
     }
+
+    @Operation(
+            summary = "Terminate (deactivate) a contract by ID",
+            description = "Changes the status of the specified contract to INACTIVE.")
+    @ApiResponses(
+            value = {
+                    @ApiResponse(responseCode = "204", description = "Contract terminated successfully"),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Contract or customer not found",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class))),
+                    @ApiResponse(
+                            responseCode = "422",
+                            description = "Brand mismatch: contract does not belong to the specified" + " customer",
+                            content =
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)))
+            })
+    @PutMapping(value = "/{contractId}/{customerId}/terminate")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('USER')")
+    public void terminateContract(
+            @PathVariable(value = "customerId") @NotNull final UUID customerId,
+            @PathVariable(value = "contractId") @NotNull final UUID contractId) {
+        log.debug("Terminating contract: {} for customer: {}", contractId, customerId);
+
+        shopService.terminateContract(customerId, contractId);
+        log.info("Contract terminated successfully: {}", contractId);
+    }
 }
+

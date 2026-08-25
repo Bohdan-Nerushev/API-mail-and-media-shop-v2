@@ -55,7 +55,10 @@ spring:
 app:
   keycloak:
     external-url: ${KC_URL:https://localhost:8443}
+    internal-url: ${KC_INTERNAL_URL:https://keycloak:8443}
     realm: ${KC_REALM:mail-and-media-shop-realm}
+    admin-user: ${KC_ADMIN_USER:admin}
+    admin-pass: ${KC_ADMIN_PASS:admin}
 
 server:
   port: 8090
@@ -112,3 +115,11 @@ logging:
         SQL: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%X{correlationId}] %-5level %logger{36} - %msg%n"
+
+sentry:
+  dsn: "${SENTRY_DSN:http://07605df1eb7445588d2bf1850d431c89@sentry:9000/2}"
+  traces-sample-rate: 1.0
+  sample-rate: 1.0
+  send-default-pii: true
+  debug: true
+  exception-resolver-order: -2147483647

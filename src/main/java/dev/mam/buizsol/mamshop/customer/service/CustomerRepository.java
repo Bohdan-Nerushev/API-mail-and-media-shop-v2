@@ -16,6 +16,9 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
     @NotNull
     Optional<Customer> findById(@NotNull UUID id);
 
+    @EntityGraph(attributePaths = {"address", "invoiceAddress", "communicationDetails"})
+    Optional<Customer> findByCommunicationDetailsEmail(@NotNull String email);
+
     default Customer getById(@NotNull final UUID id) throws CustomerNotFoundException {
         return findById(id).orElseThrow(() -> new CustomerNotFoundException("Customer with ID " + id + " not found"));
     }

@@ -273,3 +273,42 @@ def test_should_successfully_delete_customer_when_id_is_valid(customer_id, base_
     response = requests.delete(url, headers=header)
     assert response.status_code == 204, f"Expected 204, got {response.status_code}"
     logger.info(f"Test Success: Customer {customer_id} deleted successfully.")
+
+
+def test_get_current_customer_me_success(base_url_shop, header, expected_customer_id=None):
+    """Verify GET /api/v1/shop/customers/me returns current customer profile when authenticated."""
+    url = f"{base_url_shop}/customers/me"
+    response = requests.get(url, headers=header)
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    data = response.json()
+    assert "id" in data, "Response should contain customer ID"
+    assert "firstName" in data, "Response should contain firstName"
+    assert "lastName" in data, "Response should contain lastName"
+    assert "brand" in data, "Response should contain brand"
+    assert "communicationDetails" in data, "Response should contain communicationDetails"
+    if expected_customer_id:
+        assert data["id"] == expected_customer_id, f"Expected customer ID {expected_customer_id}, got {data['id']}"
+    logger.info("Test Success: GET /api/v1/shop/customers/me returned current authenticated customer profile.")
+    print("Get current customer me success passed")
+    return data
+
+
+def test_get_current_customer_me_unauthorized(base_url_shop):
+    """Verify GET /api/v1/shop/customers/me returns 401/403 when unauthenticated."""
+    url = f"{base_url_shop}/customers/me"
+    unauth_headers = {"Content-Type": "application/json"}
+    response = requests.get(url, headers=unauth_headers)
+    assert response.status_code in [401, 403], f"Expected 401 or 403 for unauthenticated request, got {response.status_code}"
+    logger.info("Test Success: GET /api/v1/shop/customers/me correctly rejected unauthenticated request.")
+    print("Get current customer me unauthorized passed")
+
+
+def test_get_current_customer_me_not_found(base_url_shop, header):
+    """Verify GET /api/v1/shop/customers/me returns 404 when authenticated user has no matching customer profile."""
+    url = f"{base_url_shop}/customers/me"
+    response = requests.get(url, headers=header)
+    assert response.status_code == 404, f"Expected 404, got {response.status_code}: {response.text}"
+    data = response.json()
+    assert data.get("errorCode") == "CUSTOMER_NOT_FOUND", f"Expected CUSTOMER_NOT_FOUND error code, got {data}"
+    logger.info("Test Success: GET /api/v1/shop/customers/me correctly returned 404 for unmapped user.")
+    print("Get current customer me not found passed")

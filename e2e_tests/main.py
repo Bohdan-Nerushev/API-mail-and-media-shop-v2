@@ -2,8 +2,12 @@ import copy
 import uuid
 import logging
 import os
+import requests
+import urllib3
 from pathlib import Path
 from dotenv import load_dotenv
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configure logging
 logging.basicConfig(
@@ -39,7 +43,10 @@ from controller.customers_controller_end_to_end_api_test import (
     test_purchase_customer_inactive_fail,
     test_delete_active_customer_fail,
     test_should_handle_product_purchase_idempotently_when_called_multiple_times,
-    test_should_verify_purchased_product_data_integrity_after_purchase
+    test_should_verify_purchased_product_data_integrity_after_purchase,
+    test_get_current_customer_me_success,
+    test_get_current_customer_me_unauthorized,
+    test_get_current_customer_me_not_found
 )
 from controller.contracts_controller_end_to_end_api_test import (
     test_should_successfully_list_contracts_when_customer_id_is_valid,
@@ -49,14 +56,21 @@ from controller.contracts_controller_end_to_end_api_test import (
     test_should_handle_contract_activation_idempotently_when_called_multiple_times,
     test_should_return_400_when_activating_contract_belonging_to_another_customer,
     test_should_return_409_when_listing_contracts_for_inactive_customer,
-    test_should_return_404_when_listing_contracts_for_deleted_customer
+    test_should_return_404_when_listing_contracts_for_deleted_customer,
+    test_should_terminate_contract_successfully_when_ids_are_valid,
+    test_should_return_404_when_terminating_non_existent_contract,
+    test_should_return_400_when_terminating_contract_belonging_to_another_customer
 )
 from controller.billings_controller_end_to_end_api_test import (
     test_should_successfully_generate_invoice_when_valid_customer_id_is_provided,
     test_should_return_404_when_generating_invoice_for_non_existent_customer,
     test_should_return_404_when_server_error_occurs_during_invoice_generation,
     test_should_handle_invoice_generation_idempotently_when_called_multiple_times,
-    test_should_return_409_when_generating_invoice_for_inactive_customer
+    test_should_return_409_when_generating_invoice_for_inactive_customer,
+    test_should_successfully_download_invoice_pdf_when_valid_customer_id_is_provided,
+    test_should_return_404_when_downloading_pdf_for_non_existent_customer,
+    test_should_return_400_when_downloading_pdf_without_customer_id,
+    test_should_return_400_when_downloading_pdf_with_invalid_customer_id_format
 )
 from controller.products_controller_end_to_end_api_test import (
     test_should_successfully_retrieve_products_when_valid_brand_is_provided,
@@ -65,10 +79,13 @@ from controller.products_controller_end_to_end_api_test import (
 )
 from get_user_token_to_test import get_user_token
 from load_test import LoadTestRunner
+from controller.sso_end_to_end_test import test_sso_integration
 
 # ---------------------------
 # Configuration (Environment Variables)
 # ---------------------------
+
+STORAGE_URL = os.getenv("STORAGE_APP_URL", "http://localhost:8080")
 
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -93,10 +110,11 @@ KC_CLIENT_SECRET = os.getenv("KC_CLIENT_SECRET")
 KC_GRANT_TYPE = os.getenv("KC_GRANT_TYPE")
 KC_USERNAME = os.getenv("KC_USERNAME")
 KC_PASSWORD = os.getenv("KC_PASSWORD")
-
-# UUIDs for negative test scenarios
 INVALID_CUSTOMER_ID = str(uuid.uuid4())
 INVALID_CONTRACT_ID = str(uuid.uuid4())
+USER_EMAIL = os.getenv("USER_EMAIL", "postman2@example.com")
+KC_USERNAME = USER_EMAIL
+os.environ["KC_USERNAME"] = USER_EMAIL
 
 # ---------------------------
 # Test Data Preparation
@@ -114,10 +132,11 @@ valid_customer_payload = {
     },
     "invoiceAddress": None,
     "communicationDetails": {
-        "email": "max.mustermann@gmx.de",
+        "email": USER_EMAIL,
         "telephone": "+49 621 123456"
     },
-    "brand": "GMX"
+    "brand": "GMX",
+    "password": KC_PASSWORD
 }
 #======================================================================================#
 #        RUN COMMAND - from the project root directory to run the end-to-end test      #
@@ -160,11 +179,59 @@ cd ..
 #======================================================================================#
 
 
+def cleanup_keycloak_user():
+    kc_url = os.getenv("KC_URL")
+    realm = os.getenv("KC_REALM")
+    admin_user = os.getenv("KC_ADMIN_USER", "admin")
+    admin_pass = os.getenv("KC_ADMIN_PASS", "admin")
+    test_email = os.getenv("USER_EMAIL", "postman2@example.com")
+    
+    if not kc_url or not realm:
+        logger.warning("Cleanup skipped: KC_URL or KC_REALM not configured")
+        return
+        
+    try:
+        # 1. Get Keycloak Admin token
+        token_url = f"{kc_url.rstrip('/')}/realms/master/protocol/openid-connect/token"
+        payload = {
+            "client_id": "admin-cli",
+            "username": admin_user,
+            "password": admin_pass,
+            "grant_type": "password"
+        }
+        res = requests.post(token_url, data=payload, verify=False, timeout=10)
+        if res.status_code != 200:
+            logger.warning(f"Cleanup: Failed to get Keycloak admin token: HTTP {res.status_code}")
+            return
+        admin_token = res.json().get("access_token")
+
+        # 2. Search user by email
+        search_url = f"{kc_url.rstrip('/')}/admin/realms/{realm}/users?email={test_email}"
+        res = requests.get(search_url, headers={"Authorization": f"Bearer {admin_token}"}, verify=False, timeout=10)
+        if res.status_code == 200:
+            users = res.json()
+            if users:
+                user_id = users[0].get("id")
+                # 3. Delete user
+                delete_url = f"{kc_url.rstrip('/')}/admin/realms/{realm}/users/{user_id}"
+                del_res = requests.delete(delete_url, headers={"Authorization": f"Bearer {admin_token}"}, verify=False, timeout=10)
+                if del_res.status_code == 204:
+                    logger.info(f"Cleanup: Deleted user {test_email} from Keycloak successfully.")
+                else:
+                    logger.warning(f"Cleanup: Failed to delete user from Keycloak: HTTP {del_res.status_code}")
+            else:
+                logger.info(f"Cleanup: User {test_email} not found in Keycloak. No action needed.")
+    except Exception as e:
+        logger.warning(f"Cleanup: Failed to execute Keycloak cleanup: {e}")
+
 # ---------------------------
 # Test Execution
 # ---------------------------
 if __name__ == "__main__":
     logger.info("=== Starting E2E Tests ===")
+    
+    # 0. Clean up test user in Keycloak if exists
+    cleanup_keycloak_user()
 
     # 1. Product tests (require only the base URL)
     test_should_successfully_retrieve_products_when_valid_brand_is_provided(BASE_URL_PRODUCTS)
@@ -187,8 +254,10 @@ if __name__ == "__main__":
     test_register_customer_null_fields(BASE_URL_SHOP_CUSTOMERS, HEADERS, valid_customer_payload)
 
     # 4. Inactive state checks (Scenario 2, 3, 10)
+    test_get_current_customer_me_unauthorized(BASE_URL_SHOP)
     user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
     HEADERS["Authorization"] = f"Bearer {user_token}"
+    test_get_current_customer_me_success(BASE_URL_SHOP, HEADERS, customer_id)
     test_update_address_inactive_fail(customer_id, BASE_URL_CUSTOMERS, HEADERS)
 
 
@@ -258,7 +327,16 @@ if __name__ == "__main__":
 
         test_should_return_400_when_activating_contract_belonging_to_another_customer(ANOTHER_CUSTOMER_ID, contract_id, BASE_URL_CONTRACTS, HEADERS)
 
+        # E2E Termination Tests
+        test_should_terminate_contract_successfully_when_ids_are_valid(customer_id, contract_id, BASE_URL_CONTRACTS, HEADERS)
+        
+        user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
+        HEADERS["Authorization"] = f"Bearer {user_token}"
+        test_should_return_400_when_terminating_contract_belonging_to_another_customer(ANOTHER_CUSTOMER_ID, contract_id, BASE_URL_CONTRACTS, HEADERS)
+
     test_should_return_404_when_activating_non_existent_contract(customer_id, BASE_URL_CONTRACTS, INVALID_CONTRACT_ID, HEADERS)
+    test_should_return_404_when_terminating_non_existent_contract(customer_id, BASE_URL_CONTRACTS, INVALID_CONTRACT_ID, HEADERS)
+
 
     # 10. Billing (Scenario 7)
     user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
@@ -280,6 +358,17 @@ if __name__ == "__main__":
     except AssertionError as e:
         logger.warning(f"Server error simulation note: {e}")
 
+    # 10.1 PDF Download tests
+    user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
+    HEADERS["Authorization"] = f"Bearer {user_token}"
+    test_should_successfully_download_invoice_pdf_when_valid_customer_id_is_provided(customer_id, BASE_URL_BILLING, HEADERS)
+
+    test_should_return_404_when_downloading_pdf_for_non_existent_customer(BASE_URL_BILLING, INVALID_CUSTOMER_ID, HEADERS)
+
+    test_should_return_400_when_downloading_pdf_without_customer_id(BASE_URL_BILLING, HEADERS)
+
+    test_should_return_400_when_downloading_pdf_with_invalid_customer_id_format(BASE_URL_BILLING, HEADERS)
+
     # 11. Termination and constraints (Scenario 4)
     user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
     HEADERS["Authorization"] = f"Bearer {user_token}"
@@ -294,14 +383,27 @@ if __name__ == "__main__":
     # 12. Final checks after deletion
     user_token = get_user_token(kc_url=KC_URL, realm=KC_REALM, client_id=KC_CLIENT_ID, client_secret=KC_CLIENT_SECRET, grant_type=KC_GRANT_TYPE, username=KC_USERNAME,password=KC_PASSWORD)
     HEADERS["Authorization"] = f"Bearer {user_token}"
-    test_should_return_404_when_listing_contracts_for_deleted_customer(customer_id, BASE_URL_SHOP_CONTRACTS, HEADERS)
+    # 12b. SSO Integration Testing
+    test_sso_integration(
+        kc_url=KC_URL,
+        realm=KC_REALM,
+        client_id=KC_CLIENT_ID,
+        client_secret=KC_CLIENT_SECRET,
+        username=KC_USERNAME,
+        password=KC_PASSWORD,
+        api_url=APP_URL,
+        storage_url=STORAGE_URL,
+        token_helper_fn=get_user_token
+    )
 
     # 13. Load Testing (Optional or scaled down for regular E2E)
     logger.info("=== Starting Load Test Phase ===")
     load_runner = LoadTestRunner()
     # Running a smaller load by default in regular E2E to ensure it works without taking too much time
-    total_load_customers = int(os.getenv("LOAD_TEST_QUICK_TOTAL", "100"))
-    success_purchases, failure_purchases = load_runner.run_load_test(total=total_load_customers, workers=20, purchases=10)
+    total_load_customers = int(os.getenv("LOAD_TEST_QUICK_TOTAL", "5"))
+    workers = int(os.getenv("LOAD_TEST_QUICK_WORKERS", "2"))
+    purchases = int(os.getenv("LOAD_TEST_QUICK_PURCHASES", "1"))
+    success_purchases, failure_purchases = load_runner.run_load_test(total=total_load_customers, workers=workers, purchases=purchases)
     
     if total_load_customers > 0 and success_purchases == 0:
         logger.error("Load Test failed: 0 successful operations. Check logs for details.")

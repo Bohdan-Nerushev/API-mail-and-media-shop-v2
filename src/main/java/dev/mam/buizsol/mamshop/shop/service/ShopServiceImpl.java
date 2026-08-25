@@ -21,16 +21,18 @@ import dev.mam.buizsol.mamshop.product.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
 @Service
 @Transactional(readOnly = true)
-class ShopServiceImpl implements ShopService {
+public class ShopServiceImpl implements ShopService {
 
     private final CustomerService customerService;
     private final ProductService productService;
@@ -63,16 +65,52 @@ class ShopServiceImpl implements ShopService {
     }
 
     @Override
+    public Customer loadCustomerByJwt(final Jwt jwt) throws CustomerNotFoundException {
+        if (jwt == null) {
+            throw new CustomerValidationException("JWT token must not be null");
+        }
+
+        final String email = jwt.getClaimAsString("email");
+        if (email != null && !email.isBlank()) {
+            final Optional<Customer> customerByEmail = customerService.findCustomerByEmail(email);
+            if (customerByEmail.isPresent()) {
+                return customerByEmail.get();
+            }
+        }
+
+        final String preferredUsername = jwt.getClaimAsString("preferred_username");
+        if (preferredUsername != null && !preferredUsername.isBlank()) {
+            final Optional<Customer> customerByUsername = customerService.findCustomerByEmail(preferredUsername);
+            if (customerByUsername.isPresent()) {
+                return customerByUsername.get();
+            }
+        }
+
+        final String sub = jwt.getSubject();
+        if (sub != null && !sub.isBlank()) {
+            try {
+                final UUID customerId = UUID.fromString(sub);
+                final Optional<Customer> customerById = customerService.findCustomerById(customerId);
+                if (customerById.isPresent()) {
+                    return customerById.get();
+                }
+            } catch (final IllegalArgumentException e) {
+                log.debug("JWT subject '{}' is not a valid UUID", sub);
+            }
+        }
+
+        throw new CustomerNotFoundException("Customer not found for the authenticated user");
+    }
+
+    @Override
     @Transactional
     @CacheEvict(value = "customers", key = "#customerId")
     public void removeCustomer(final UUID customerId) throws CustomerNotFoundException {
         final Customer customer = loadCustomer(customerId);
         final List<Contract> contracts = contractService.findContractsByCustomerId(customerId);
 
-        final boolean hasActiveContracts = contracts.stream().anyMatch(c -> c.getStatus() == ContractStatus.ACTIVE);
-
-        if (customer.getStatus() == CustomerStatus.ACTIVE && hasActiveContracts) {
-            throw new CustomerValidationException("Cannot remove active customer with active contracts");
+        if (customer.getStatus() == CustomerStatus.ACTIVE && !contracts.isEmpty()) {
+            throw new CustomerValidationException("Cannot remove active customer with contracts");
         }
         customerService.deleteCustomer(customerId);
     }
@@ -157,6 +195,27 @@ class ShopServiceImpl implements ShopService {
 
         contractService.updateContractStatus(contractId, ContractStatus.ACTIVE);
     }
+
+    @Override
+    @Transactional
+    public void terminateContract(final UUID customerId, final UUID contractId)
+            throws CustomerNotFoundException, ContractNotFoundException {
+        final Contract contract = contractService
+                .findContractById(contractId)
+                .orElseThrow(() -> new ContractNotFoundException("Contract not found: " + contractId));
+
+        if (!contract.getCustomer().getId().equals(customerId)) {
+            throw new CustomerValidationException("Contract does not belong to the specified customer");
+        }
+
+        if (contract.getStatus() == ContractStatus.INACTIVE) {
+            log.info("Contract {} is already inactive, skipping", contractId);
+            return;
+        }
+
+        contractService.updateContractStatus(contractId, ContractStatus.INACTIVE);
+    }
+
 
     @Override
     @Cacheable(value = "products", key = "#brand")

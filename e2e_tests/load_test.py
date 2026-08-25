@@ -85,7 +85,8 @@ class CustomerLoadService:
                 "email": "loadtest@example.com",
                 "telephone": "+49 123456789"
             },
-            "brand": "GMX"
+            "brand": "GMX",
+            "password": "securePassword123"
         }
 
     def register_and_activate(self, index: int) -> Tuple[bool, Optional[str]]:
@@ -101,7 +102,7 @@ class CustomerLoadService:
                 self.config.customers_url, 
                 headers=self.config.headers, 
                 json=payload,
-                timeout=10
+                timeout=30
             )
             if response.status_code != 201:
                 return False, f"Registration failed with status {response.status_code}"
@@ -133,7 +134,7 @@ class PurchaseLoadService:
                 url, 
                 headers=self.config.headers, 
                 json=payload,
-                timeout=10
+                timeout=30
             )
             return response.status_code
         except Exception as e:

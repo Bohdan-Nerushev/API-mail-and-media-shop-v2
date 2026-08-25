@@ -4,6 +4,7 @@ import dev.mam.buizsol.mamshop.billing.service.BillingService;
 import dev.mam.buizsol.mamshop.contract.model.Contract;
 import dev.mam.buizsol.mamshop.contract.model.ContractStatus;
 import dev.mam.buizsol.mamshop.contract.service.ContractService;
+import dev.mam.buizsol.mamshop.customer.exception.CustomerNotFoundException;
 import dev.mam.buizsol.mamshop.customer.exception.CustomerValidationException;
 import dev.mam.buizsol.mamshop.customer.model.Customer;
 import dev.mam.buizsol.mamshop.customer.model.CustomerStatus;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,32 +55,29 @@ class ShopServiceTest {
     }
 
     @Test
-    @DisplayName("Remove Customer: Should throw exception when customer is active and has active contracts")
-    void shouldThrowExceptionWhenRemovingActiveCustomerWithActiveContracts() {
+    @DisplayName("Remove Customer: Should throw exception when customer is active and has contracts")
+    void shouldThrowExceptionWhenRemovingActiveCustomerWithContracts() {
         final UUID customerId = UUID.randomUUID();
         final Customer customer = mock(Customer.class);
-        final Contract activeContract = mock(Contract.class);
+        final Contract contract = mock(Contract.class);
 
         when(customerService.findCustomerById(customerId)).thenReturn(Optional.of(customer));
         when(customer.getStatus()).thenReturn(CustomerStatus.ACTIVE);
-        when(contractService.findContractsByCustomerId(customerId)).thenReturn(List.of(activeContract));
-        when(activeContract.getStatus()).thenReturn(ContractStatus.ACTIVE);
+        when(contractService.findContractsByCustomerId(customerId)).thenReturn(List.of(contract));
 
         assertThrows(CustomerValidationException.class, () -> shopService.removeCustomer(customerId));
         verify(customerService, never()).deleteCustomer(customerId);
     }
 
     @Test
-    @DisplayName("Remove Customer: Should succeed when customer is active but has no active contracts")
-    void shouldSucceedWhenRemovingActiveCustomerWithoutActiveContracts() throws Exception {
+    @DisplayName("Remove Customer: Should succeed when customer is active and has no contracts")
+    void shouldSucceedWhenRemovingActiveCustomerWithoutContracts() throws Exception {
         final UUID customerId = UUID.randomUUID();
         final Customer customer = mock(Customer.class);
-        final Contract inactiveContract = mock(Contract.class);
 
         when(customerService.findCustomerById(customerId)).thenReturn(Optional.of(customer));
         when(customer.getStatus()).thenReturn(CustomerStatus.ACTIVE);
-        when(contractService.findContractsByCustomerId(customerId)).thenReturn(List.of(inactiveContract));
-        when(inactiveContract.getStatus()).thenReturn(ContractStatus.INACTIVE);
+        when(contractService.findContractsByCustomerId(customerId)).thenReturn(List.of());
 
         shopService.removeCustomer(customerId);
 
@@ -153,5 +152,51 @@ class ShopServiceTest {
 
         assertEquals(existingContract, result);
         verify(contractService, never()).createContract(any(), any());
+    }
+
+    @Test
+    @DisplayName("Load Customer by JWT: Should find customer by email claim")
+    void shouldLoadCustomerByJwtEmailClaim() throws Exception {
+        final Jwt jwt = mock(Jwt.class);
+        final String email = "test@example.com";
+        final Customer customer = mock(Customer.class);
+
+        when(jwt.getClaimAsString("email")).thenReturn(email);
+        when(customerService.findCustomerByEmail(email)).thenReturn(Optional.of(customer));
+
+        final Customer result = shopService.loadCustomerByJwt(jwt);
+
+        assertEquals(customer, result);
+        verify(customerService).findCustomerByEmail(email);
+    }
+
+    @Test
+    @DisplayName("Load Customer by JWT: Should find customer by subject UUID if email not found")
+    void shouldLoadCustomerByJwtSubjectUuid() throws Exception {
+        final Jwt jwt = mock(Jwt.class);
+        final UUID customerId = UUID.randomUUID();
+        final Customer customer = mock(Customer.class);
+
+        when(jwt.getClaimAsString("email")).thenReturn(null);
+        when(jwt.getClaimAsString("preferred_username")).thenReturn(null);
+        when(jwt.getSubject()).thenReturn(customerId.toString());
+        when(customerService.findCustomerById(customerId)).thenReturn(Optional.of(customer));
+
+        final Customer result = shopService.loadCustomerByJwt(jwt);
+
+        assertEquals(customer, result);
+        verify(customerService).findCustomerById(customerId);
+    }
+
+    @Test
+    @DisplayName("Load Customer by JWT: Should throw CustomerNotFoundException when no customer matches")
+    void shouldThrowExceptionWhenLoadCustomerByJwtFails() {
+        final Jwt jwt = mock(Jwt.class);
+        when(jwt.getClaimAsString("email")).thenReturn("unknown@example.com");
+        when(customerService.findCustomerByEmail("unknown@example.com")).thenReturn(Optional.empty());
+        when(jwt.getClaimAsString("preferred_username")).thenReturn(null);
+        when(jwt.getSubject()).thenReturn("not-a-uuid");
+
+        assertThrows(CustomerNotFoundException.class, () -> shopService.loadCustomerByJwt(jwt));
     }
 }

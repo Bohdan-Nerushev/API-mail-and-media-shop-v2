@@ -49,7 +49,10 @@ class CustomerServiceTest {
             final Address invoiceAddress,
             final CommunicationDetails communicationDetails,
             final Brand brand) {
-        return Customer.create(firstName, lastName, birthDate, address, invoiceAddress, communicationDetails, brand);
+        final Customer customer =
+                Customer.create(firstName, lastName, birthDate, address, invoiceAddress, communicationDetails, brand);
+        customer.setPassword("secretPassword");
+        return customer;
     }
 
     private Address address;
@@ -59,6 +62,9 @@ class CustomerServiceTest {
     @Mock
     private CustomerRepository customerRepository;
 
+    @Mock
+    private KeycloakAdminService keycloakAdminService;
+
     private CustomerService customerService;
 
     @BeforeEach
@@ -66,7 +72,7 @@ class CustomerServiceTest {
         address = new Address("Street", "1", "12345", "City", "Country");
         communicationDetails = new CommunicationDetails("john.doe@example.com", "123456789");
 
-        final CustomerServiceImpl target = new CustomerServiceImpl(customerRepository);
+        final CustomerServiceImpl target = new CustomerServiceImpl(customerRepository, keycloakAdminService);
 
         final LocalValidatorFactoryBean validatorFactory = new LocalValidatorFactoryBean();
         validatorFactory.afterPropertiesSet();
@@ -79,6 +85,9 @@ class CustomerServiceTest {
         customerService = (CustomerService) factory.getProxy();
 
         lenient().when(customerRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient()
+                .when(keycloakAdminService.createUser(any(), any(), any(), any()))
+                .thenReturn(UUID.randomUUID());
     }
 
     @Test
@@ -367,6 +376,27 @@ class CustomerServiceTest {
         assertEquals(customers.size(), result.size());
         assertEquals(customers, result);
         verify(customerRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("Find customer by email should return customer from repository")
+    void shouldReturnCustomerWhenFindingByEmailSuccessfully() {
+        final String email = "john.doe@example.com";
+        final Customer customer = mock(Customer.class);
+        when(customerRepository.findByCommunicationDetailsEmail(email)).thenReturn(Optional.of(customer));
+
+        final Optional<Customer> result = customerService.findCustomerByEmail(email);
+
+        assertTrue(result.isPresent());
+        assertEquals(customer, result.get());
+        verify(customerRepository).findByCommunicationDetailsEmail(email);
+    }
+
+    @Test
+    @DisplayName("Find customer by blank email should return empty optional")
+    void shouldReturnEmptyWhenFindingByBlankEmail() {
+        final Optional<Customer> result = customerService.findCustomerByEmail("   ");
+        assertTrue(result.isEmpty());
     }
 
     @Test

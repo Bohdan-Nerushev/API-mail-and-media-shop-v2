@@ -20,27 +20,44 @@ import java.util.UUID;
 class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final KeycloakAdminService keycloakAdminService;
 
-    CustomerServiceImpl(final CustomerRepository customerRepository) {
-        if (customerRepository == null) {
-            throw new CustomerValidationException("Customer repository must not be null");
+    CustomerServiceImpl(final CustomerRepository customerRepository, final KeycloakAdminService keycloakAdminService) {
+        if (customerRepository == null || keycloakAdminService == null) {
+            throw new CustomerValidationException("Dependencies must not be null");
         }
         this.customerRepository = customerRepository;
+        this.keycloakAdminService = keycloakAdminService;
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", allEntries = true)
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public Customer createCustomer(final Customer customer) {
         if (customer == null) {
             throw new CustomerValidationException("Customer must not be null");
         }
+        if (customer.getPassword() == null || customer.getPassword().isBlank()) {
+            throw new CustomerValidationException("Password must not be empty");
+        }
+
+        final UUID keycloakUserId = keycloakAdminService.createUser(
+                customer.getCommunicationDetails().getEmail(),
+                customer.getFirstName(),
+                customer.getLastName(),
+                customer.getPassword());
+
+        customer.setId(keycloakUserId);
         return customerRepository.save(customer);
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void updateAddress(final UUID customerId, final Address address) throws CustomerNotFoundException {
         if (customerId == null || address == null) {
             throw new CustomerValidationException("Parameters must not be null");
@@ -52,7 +69,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void updateInvoiceAddress(final UUID customerId, final Address address) throws CustomerNotFoundException {
         if (customerId == null || address == null) {
             throw new CustomerValidationException("Parameters must not be null");
@@ -64,7 +83,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void updateCommunicationDetails(final UUID customerId, final CommunicationDetails communicationDetails)
             throws CustomerNotFoundException {
         if (customerId == null || communicationDetails == null) {
@@ -77,7 +98,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void activateCustomer(final UUID customerId) throws CustomerNotFoundException {
         if (customerId == null) {
             throw new CustomerValidationException("Customer ID must not be null");
@@ -89,7 +112,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void deactivateCustomer(final UUID customerId) throws CustomerNotFoundException {
         if (customerId == null) {
             throw new CustomerValidationException("Customer ID must not be null");
@@ -101,7 +126,9 @@ class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "customers", key = "#customerId")
+    @CacheEvict(
+            value = {"customers", "customersByEmail"},
+            allEntries = true)
     public void deleteCustomer(final UUID customerId) throws CustomerNotFoundException {
         if (customerId == null) {
             throw new CustomerValidationException("Customer ID must not be null");
@@ -116,6 +143,15 @@ class CustomerServiceImpl implements CustomerService {
     @Cacheable(value = "customers", key = "#customerId")
     public Optional<Customer> findCustomerById(final UUID customerId) {
         return customerRepository.findById(customerId);
+    }
+
+    @Override
+    @Cacheable(value = "customersByEmail", key = "#email")
+    public Optional<Customer> findCustomerByEmail(final String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return customerRepository.findByCommunicationDetailsEmail(email);
     }
 
     @Override

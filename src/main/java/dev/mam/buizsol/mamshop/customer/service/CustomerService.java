@@ -38,5 +38,8 @@ public interface CustomerService {
     Optional<Customer> findCustomerById(@NotNull UUID customerId);
 
     @NotNull
+    Optional<Customer> findCustomerByEmail(@NotNull String email);
+
+    @NotNull
     List<Customer> findAllCustomers();
 }
