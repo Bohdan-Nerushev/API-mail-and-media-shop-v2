@@ -137,7 +137,8 @@ jobs:
 
       - name: Generate Keycloak SSL Certificates
         run: |
-          mkdir -p certs
+          mkdir -p certs logs
+          chmod -R 777 certs logs
           touch certs/keycloak-cert.pem certs/keycloak-key.pem certs/truststore.jks
           openssl req -x509 -newkey rsa:4096 -nodes -sha256 \
             -keyout certs/keycloak-key.pem \
