@@ -315,6 +315,12 @@ jobs:
           chmod +x scripts/3_e2e-test-runner.sh
           ./scripts/3_e2e-test-runner.sh
 
+      - name: Fix log permissions for upload
+        if: always()
+        run: |
+          sudo chmod -R a+r logs/ 2>/dev/null || true
+          sudo chmod -R 777 logs/ 2>/dev/null || true
+
       - name: Upload container & application logs
         if: always()
         uses: actions/upload-artifact@v4
