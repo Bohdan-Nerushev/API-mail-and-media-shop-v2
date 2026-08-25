@@ -82,6 +82,9 @@ if [ ! -f "$PROJECT_ROOT/certs/truststore.jks" ] || [ ! -s "$PROJECT_ROOT/certs/
       -file "$PROJECT_ROOT/certs/keycloak-cert.pem" || error_exit "Java truststore generation failed."
 fi
 
+# Ensure all generated certs are accessible by non-root containers (like Keycloak with UID 1000)
+chmod -R 777 "$PROJECT_ROOT/certs" 2>/dev/null || true
+
 
 log_info "Building and starting infrastructure containers..."
 docker compose up -d keycloak-db keycloak shop-db shop-redis || error_exit "Docker Compose infrastructure start failed."

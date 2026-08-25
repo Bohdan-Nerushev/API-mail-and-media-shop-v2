@@ -153,6 +153,7 @@ jobs:
             -storepass "${{ secrets.TRUSTSTORE_PASSWORD || 'changeit' }}" \
             -alias keycloak \
             -file certs/keycloak-cert.pem
+          chmod -R 777 certs
 
       - name: Start Docker Compose services for tests
         run: |
