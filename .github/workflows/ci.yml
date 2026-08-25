@@ -146,6 +146,7 @@ jobs:
             -days 365 \
             -addext "basicConstraints=critical,CA:TRUE" \
             -addext "subjectAltName=DNS:keycloak,DNS:localhost,IP:127.0.0.1"
+          rm -f certs/truststore.jks
           keytool -importcert -noprompt \
             -keystore certs/truststore.jks \
             -storepass "${{ secrets.TRUSTSTORE_PASSWORD || 'changeit' }}" \
