@@ -1155,11 +1155,11 @@ docker compose up -d --build app
 
 ## CI/CD Pipeline & Deployment
 
-The project uses **GitLab CI/CD** for automated testing, packaging, and deployment. All deployment logic is externalized into standalone Bash scripts located in the `scripts/` directory, invoked from `.gitlab-ci.yml`.
+The project supports both **GitLab CI/CD** (configured via `.gitlab-ci.yml`) and **GitHub Actions** (configured via `.github/workflows/ci.yml`) for automated building, testing, and deployment. All deployment logic is externalized into standalone Bash scripts located in the `scripts/` directory.
 
-### Pipeline Stages
+### GitLab CI/CD Pipeline Stages
 
-The CI/CD pipeline consists of the following stages executed sequentially:
+The GitLab CI/CD pipeline consists of the following stages executed sequentially:
 
 | Stage | Job | Trigger | Description |
 |---|---|---|---|
@@ -1171,6 +1171,21 @@ The CI/CD pipeline consists of the following stages executed sequentially:
 | `deploy-live` | `deploy_live` | Manual (tag only) | Deploys to **live** namespace via Helm using `7_deploy-live.sh` |
 
 The `deploy_live` job only triggers on semantic version tags matching `^v\d+\.\d+\.\d+$`.
+
+### GitHub Actions Workflows
+
+The GitHub Actions workflow executes on every push and pull request to any branch. It runs the following jobs in parallel:
+
+* **Build & Unit Tests** (`Java CI — Unit Tests`):
+  * Sets up JDK 25 (Temurin).
+  * Generates self-signed SSL certificates and Java truststore for Keycloak.
+  * Launches infrastructure services (PostgreSQL, Keycloak, Redis) via Docker Compose.
+  * Runs Maven test suite (`mvn clean install`).
+* **E2E Tests** (`E2E Tests (Docker Compose Stack)`):
+  * Sets up Python 3.12 and JDK 25.
+  * Orchestrates infrastructure, builds the Spring Boot app, and deploys using `1_docker-e2e-setup.sh`.
+  * Runs Python API E2E tests using `3_e2e-test-runner.sh`.
+  * Captures and uploads container logs (Keycloak, Postgres, Redis) as artifacts with fixed file permissions to prevent archival failures.
 
 ### Deployment Scripts
 
