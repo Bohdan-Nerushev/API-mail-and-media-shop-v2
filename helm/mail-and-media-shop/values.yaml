@@ -158,3 +158,9 @@ elasticsearchSetup:
 kibana:
   enabled: false
   image: docker.elastic.co/kibana/kibana:9.4.2
+
+vault:
+  enabled: true
+  server: "http://192.168.56.10:8200"
+  role: "mam-shop-role"
+
