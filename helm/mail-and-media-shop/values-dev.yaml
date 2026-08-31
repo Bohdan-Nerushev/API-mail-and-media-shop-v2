@@ -70,6 +70,9 @@ keycloak:
 keycloakSetup:
   enabled: true
   image: docker:cli
+  userName: "CHANGE_ME_IN_VAULT"
+  userEmail: "CHANGE_ME_IN_VAULT"
+  userPassword: "CHANGE_ME_IN_VAULT"
 
 nginx:
   image: nginx:1.25-alpine
@@ -139,6 +142,11 @@ kibana:
 
 vault:
   enabled: true
-  server: "http://192.168.56.10:8200"
+  server: "https://192.168.56.10:8200"
   role: "mam-shop-role"
+  caProvider:
+    enabled: true
+    type: "ConfigMap"
+    name: "vault-ca"
+    key: "ca.crt"
 

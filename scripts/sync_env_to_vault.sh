@@ -127,3 +127,5 @@ rm -f "$TEMP_UPLOAD_SCRIPT"
 $SSH_CMD "rm -f /tmp/vault_sync_data.sh"
 
 log_info "Vault synchronization completed successfully!"
+log_info "Syncing Vault CA certificate to Kubernetes ConfigMap 'vault-ca'..."
+$SSH_CMD "sudo cat /opt/vault/tls/tls.crt" | kubectl create configmap vault-ca --from-file=ca.crt=/dev/stdin -n mail-and-media-shop-dev --dry-run=client -o yaml | kubectl apply -f - || true

@@ -48,11 +48,11 @@ spec:
             - name: KEYCLOAK_DB_NAME
               value: {{ .Values.keycloakdb.auth.database | quote }}
             - name: USER_NAME
-              value: "postman_user2"
+              value: {{ .Values.keycloakSetup.userName | quote }}
             - name: USER_EMAIL
-              value: "postman2@example.com"
+              value: {{ .Values.keycloakSetup.userEmail | quote }}
             - name: USER_PASSWORD
-              value: "password123"
+              value: {{ .Values.keycloakSetup.userPassword | quote }}
           volumeMounts:
             - name: scripts
               mountPath: /scripts

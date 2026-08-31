@@ -26,7 +26,7 @@ CLIENT_SECRET=${KC_CLIENT_SECRET:-""}
 
 USER_NAME=${USER_NAME:-"postman_user2"}
 USER_EMAIL=${USER_EMAIL:-"postman2@example.com"}
-USER_PASSWORD=${USER_PASSWORD:-"password123"}
+USER_PASSWORD=${USER_PASSWORD}
 
 echo "--------------------------------------------------"
 echo "🔧 KEYCLOAK AUTOMATIC CONFIGURATION"

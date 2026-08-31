@@ -7,11 +7,11 @@ NODES="${CLUSTER_NODES:-${SSH_USER}@${SSH_HOST}}"
 
 $SSH_CMD "rm -rf ~/mam-deployments/mail-and-media-shop"
 
-log_info "Building Docker image ${IMAGE_NAME}:${IMAGE_TAG}..."
-docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" .
+log_info "Building Docker image ${IMAGE_NAME}:${IMAGE_TAG} and ${IMAGE_NAME}:app..."
+docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" -t "${IMAGE_NAME}:app" .
 
 log_info "Saving Docker image archive ${IMAGE_NAME}-${IMAGE_TAG}.tar..."
-docker save -o "${IMAGE_NAME}-${IMAGE_TAG}.tar" "${IMAGE_NAME}:${IMAGE_TAG}"
+docker save -o "${IMAGE_NAME}-${IMAGE_TAG}.tar" "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:app"
 
 for NODE in $NODES; do
     log_info "Distributing image to node: ${NODE}..."

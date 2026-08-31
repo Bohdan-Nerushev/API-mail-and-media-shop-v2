@@ -25,9 +25,10 @@ resource "helm_release" "mail_and_media_shop" {
   namespace = kubernetes_namespace_v1.app_namespace.metadata[0].name
 
   # Wait for all resources to become ready before completing the apply operation
-  wait          = true
-  timeout       = 300
-  recreate_pods = true
+  wait            = true
+  timeout         = 300
+  recreate_pods   = true
+  cleanup_on_fail = true
 
   # Inject custom values files into the Helm release
   # Primary values.yaml is always loaded first, followed by environment-specific values (e.g., values-dev.yaml)
