@@ -27,7 +27,7 @@ shopdb:
   auth:
     database: shop_db
     username: shop_user
-    password: "secret"
+    password: "CHANGE_ME_IN_VAULT"
   resources:
     requests:
       cpu: 150m
@@ -43,7 +43,7 @@ keycloakdb:
   auth:
     database: keycloak
     username: keycloak
-    password: "keycloak"
+    password: "CHANGE_ME_IN_VAULT"
   resources:
     requests:
       cpu: 100m
@@ -68,8 +68,8 @@ keycloak:
   image: quay.io/keycloak/keycloak:26.0.0
   auth:
     adminUser: admin
-    adminPassword: "admin"
-    clientSecret: "2BcfsFrhh6WWwMQMhxfyjweZuLdWmfpr"
+    adminPassword: "CHANGE_ME_IN_VAULT"
+    clientSecret: "CHANGE_ME_IN_VAULT"
   resources:
     requests:
       cpu: 250m

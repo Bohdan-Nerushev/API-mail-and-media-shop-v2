@@ -252,6 +252,9 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Local secrets files (if created)
+# Local secrets and environment variable files
+*.tfvars
 *.tfvars.local
+!*.tfvars.example
+
 
