@@ -35,8 +35,8 @@ spec:
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "mail-and-media-shop.fullname" . }}-shop-db-secret
-                  key: password
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-shop-db-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}SHOP_DB_PASSWORD{{ else }}password{{ end }}
             - name: SPRING_DATA_REDIS_HOST
               value: {{ include "mail-and-media-shop.redis.svcName" . | quote }}
             - name: SPRING_DATA_REDIS_PORT

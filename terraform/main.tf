@@ -36,4 +36,11 @@ resource "helm_release" "mail_and_media_shop" {
     file("${path.module}/${var.chart_path}/values.yaml"),
     fileexists("${path.module}/${var.chart_path}/values-${var.environment}.yaml") ? file("${path.module}/${var.chart_path}/values-${var.environment}.yaml") : ""
   ]
+
+  set = [
+    {
+      name  = "app.image.tag"
+      value = var.image_tag
+    }
+  ]
 }

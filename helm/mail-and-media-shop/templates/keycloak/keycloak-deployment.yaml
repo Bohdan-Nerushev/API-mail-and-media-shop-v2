@@ -40,8 +40,8 @@ spec:
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "mail-and-media-shop.fullname" . }}-keycloak-secret
-                  key: admin-password
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}KC_ADMIN_PASS{{ else }}admin-password{{ end }}
             - name: KC_DB
               value: postgres
             - name: KC_DB_URL
@@ -51,8 +51,8 @@ spec:
             - name: KC_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "mail-and-media-shop.fullname" . }}-keycloak-db-secret
-                  key: password
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-db-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}KEYCLOAK_DB_PASSWORD{{ else }}password{{ end }}
             - name: KC_HTTP_ENABLED
               value: "true"
             - name: KC_HOSTNAME_STRICT

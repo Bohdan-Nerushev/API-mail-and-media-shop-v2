@@ -29,3 +29,10 @@ variable "chart_path" {
   default     = "../helm/mail-and-media-shop"
   description = "Path to the directory containing the local Helm chart"
 }
+
+variable "image_tag" {
+  type        = string
+  default     = "latest"
+  description = "Docker image tag to deploy for the Spring Boot application"
+}
+
