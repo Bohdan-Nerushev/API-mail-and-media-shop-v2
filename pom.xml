@@ -28,6 +28,12 @@
         <dependency-check.version>12.1.0</dependency-check.version>
         <jacoco.maven.plugin.version>0.8.13</jacoco.maven.plugin.version>
         <sonar.maven.plugin.version>4.0.1.6619</sonar.maven.plugin.version>
+        <sentry.version>8.50.1</sentry.version>
+        <pdf.version>3.0.8</pdf.version>
+        <spotless.version>3.3.0</spotless.version>
+        <pmd.version>7.21.0</pmd.version>
+        <palantirJavaFormat.version>2.89.0</palantirJavaFormat.version>
+        <findsecbugs.plugin.version>1.13.0</findsecbugs.plugin.version>
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
@@ -107,13 +113,13 @@
         <dependency>
             <groupId>io.sentry</groupId>
             <artifactId>sentry-spring-boot-4</artifactId>
-            <version>8.50.1</version>
+            <version>${sentry.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.sentry</groupId>
             <artifactId>sentry-logback</artifactId>
-            <version>8.50.1</version>
+            <version>${sentry.version}</version>
         </dependency>
 
 
@@ -225,7 +231,7 @@
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
-            <version>3.0.8</version>
+            <version>${pdf.version}</version>
         </dependency>
 
         <!-- Spring Security Test -->
@@ -290,11 +296,11 @@
                     <plugin>
                         <groupId>com.diffplug.spotless</groupId>
                         <artifactId>spotless-maven-plugin</artifactId>
-                        <version>3.3.0</version>
+                        <version>${spotless.version}</version>
                         <configuration>
                             <java>
                                 <palantirJavaFormat>
-                                    <version>2.89.0</version>
+                                    <version>${java.version}</version>
                                 </palantirJavaFormat>
                                 <removeUnusedImports/>
                                 <importOrder/>
@@ -323,12 +329,12 @@
                             <dependency>
                                 <groupId>net.sourceforge.pmd</groupId>
                                 <artifactId>pmd-java</artifactId>
-                                <version>7.21.0</version>
+                                <version>${pmd.version}</version>
                             </dependency>
                             <dependency>
                                 <groupId>net.sourceforge.pmd</groupId>
                                 <artifactId>pmd-core</artifactId>
-                                <version>7.21.0</version>
+                                <version>${pmd.version}</version>
                             </dependency>
                         </dependencies>
                         <configuration>
@@ -374,7 +380,7 @@
                                 <plugin>
                                     <groupId>com.h3xstream.findsecbugs</groupId>
                                     <artifactId>findsecbugs-plugin</artifactId>
-                                    <version>1.13.0</version>
+                                    <version>${findsecbugs.plugin.version}</version>
                                 </plugin>
                             </plugins>
                         </configuration>
