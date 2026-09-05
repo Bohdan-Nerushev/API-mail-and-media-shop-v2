@@ -1166,9 +1166,9 @@ The GitLab CI/CD pipeline consists of the following stages executed sequentially
 | `test` | `unit_test_job` | Automatic | Runs `mvn clean install` with a Redis service container |
 | `e2e-test` | `e2e_test_job` | Automatic | Executes E2E test suite via `1_docker-e2e-setup.sh` and `3_e2e-test-runner.sh` |
 | `package` | `package_job` | Automatic | Builds Docker image, transfers to remote server via `4_docker-package.sh` |
-| `deploy` | `deploy_dev` | Manual | Deploys to **dev** namespace via Helm using `5_deploy-dev.sh` |
-| `deploy` | `deploy_qa` | Manual | Deploys to **qa** namespace via Helm using `6_deploy-qa.sh` |
-| `deploy-live` | `deploy_live` | Manual (tag only) | Deploys to **live** namespace via Helm using `7_deploy-live.sh` |
+| `deploy` | `deploy_dev` | Manual | Deploys to **dev** namespace via Terraform & Helm using `5_deploy-dev.sh` |
+| `deploy` | `deploy_qa` | Manual | Deploys to **qa** namespace via Terraform & Helm using `6_deploy-qa.sh` |
+| `deploy-live` | `deploy_live` | Manual (tag only) | Deploys to **live** namespace via Terraform & Helm using `7_deploy-live.sh` |
 
 The `deploy_live` job only triggers on semantic version tags matching `^v\d+\.\d+\.\d+$`.
 
@@ -1196,9 +1196,9 @@ All scripts source `utils.sh` and `env_loader.sh` to load environment variables 
 | `scripts/utils.sh` | Shared utilities: logging (`log_info`, `log_error`), dependency checks, `PROJECT_ROOT` resolution |
 | `scripts/env_loader.sh` | Loads `.env` variables in safe mode (existing CI/CD variables take precedence), exports `SSH_CMD` and `SCP_CMD` |
 | `scripts/4_docker-package.sh` | Builds Docker image, saves as tar archive, transfers to remote server via `rsync`, imports into Docker/K3s |
-| `scripts/5_deploy-dev.sh` | Copies Helm chart to remote server, runs `helm upgrade --install` for `mam-dev` namespace with `values-dev.yaml` |
-| `scripts/6_deploy-qa.sh` | Copies Helm chart to remote server, runs `helm upgrade --install` for `mam-qa` namespace with `values-qa.yaml` |
-| `scripts/7_deploy-live.sh` | Copies Helm chart to remote server, runs `helm upgrade --install` for `mam-live` namespace with `values-live.yaml` |
+| `scripts/5_deploy-dev.sh` | Deploys the **dev** environment via Terraform (`mam-dev` namespace, `values-dev.yaml`) |
+| `scripts/6_deploy-qa.sh` | Deploys the **qa** environment via Terraform (`mam-qa` namespace, `values-qa.yaml`) |
+| `scripts/7_deploy-live.sh` | Deploys the **live** environment via Terraform (`mam-live` namespace, `values-live.yaml`) |
 
 ### Environment Configuration
 
@@ -1233,11 +1233,69 @@ helm/mail-and-media-shop/
 To run any deployment script outside of CI/CD (e.g., from a local machine):
 
 ```bash
-chmod +x scripts/4_docker-package.sh
+chmod +x scripts/4_docker-package.sh scripts/5_deploy-dev.sh
 ./scripts/4_docker-package.sh
+./scripts/5_deploy-dev.sh
 ```
 
-The scripts will load variables from `.env` automatically. Ensure `SSH_USER` and `SSH_HOST` are set.
+The scripts will load variables from `.env` automatically. Ensure `SSH_USER`, `SSH_HOST`, and `CLUSTER_NODES` are set.
+
+---
+
+### Kubernetes Deployment Architecture & Port Mapping
+
+The application stack is deployed on a Kubernetes multi-node cluster (`containerd` runtime) via Terraform & Helm:
+
+* **Cluster Topology**:
+  * Master Node (`1UbuntuServer`): `192.168.56.10`
+  * Worker Node 1 (`2UbuntuServer`): `192.168.56.11`
+  * Worker Node 2 (`3UbuntuServer`): `192.168.56.12`
+
+#### Exposed Ports & Services (`dev` environment — `mam-dev` namespace)
+
+| Service Component | Internal Port | Service Type | External NodePort / URL |
+|---|---|---|---|
+| **Spring Boot API** (`app`) | `8090` | `NodePort` | **`30080`** (`http://192.168.56.10:30080`) |
+| **Nginx Reverse Proxy** | `80` | `NodePort` | **`30090`** (`http://192.168.56.10:30090`) |
+| **Keycloak IAM** | `8080` | `ClusterIP` | Internal (`mam-dev-mail-and-media-shop-keycloak:8080`) |
+| **Shop DB (PostgreSQL)** | `5432` | `ClusterIP` | Internal (`mam-dev-mail-and-media-shop-shop-db:5432`) |
+| **Keycloak DB (PostgreSQL)** | `5432` | `ClusterIP` | Internal (`mam-dev-mail-and-media-shop-keycloak-db:5432`) |
+| **Redis Cache** | `6379` | `ClusterIP` | Internal (`mam-dev-mail-and-media-shop-redis:6379`) |
+
+#### Quick Verification via `curl`
+
+Once deployed, you can verify the status of the API services:
+
+```bash
+# 1. Healthcheck (Spring Boot Actuator)
+curl -s http://192.168.56.10:30080/actuator/health | jq .
+
+# 2. Get Products List
+curl -s "http://192.168.56.10:30080/api/v1/shop/products?brand=GMX" -H "accept: application/json" | jq .
+
+# 3. Register New Customer
+curl -s -X POST http://192.168.56.10:30080/api/v1/shop/customers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Max",
+    "lastName": "Mustermann",
+    "password": "Password123!",
+    "birthDate": "1990-06-15",
+    "address": {
+      "street": "Musterstraße",
+      "number": "12A",
+      "postcode": "68161",
+      "city": "Mannheim",
+      "country": "Germany"
+    },
+    "invoiceAddress": null,
+    "communicationDetails": {
+      "email": "max.mustermann@gmx.de",
+      "telephone": "+49 621 123456"
+    },
+    "brand": "GMX"
+  }' | jq .
+```
 
 ---
 
@@ -1470,3 +1528,37 @@ The project includes an automated script [`scripts/upload_github_secrets.sh`](fi
 ### Features
 * **Filtered Secret Upload**: Uploads only the allowed keys required by the CI/CD workflows, ignoring auxiliary and monitoring variables to save GitHub secrets quota.
 * **Non-empty validation**: Automatically skips empty configuration keys.
+
+---
+
+## Environment Ports Mapping (DEV, QA, LIVE)
+
+The table below outlines the network ports for services across local Docker/Compose setup and Kubernetes deployment environments (`dev`, `qa`, `live`).
+
+### Kubernetes Environments (`NodePort` & Internal `ClusterIP`)
+
+| Service Component | Internal Port (`ClusterIP`) | DEV External Port (`NodePort`) | QA External Port (`NodePort`) | LIVE External Port (`NodePort`) | Access Protocol / URL |
+|-------------------|-----------------------------|--------------------------------|-------------------------------|---------------------------------|-----------------------|
+| **Spring Boot App** | `8090` | `30080` | `30180` | `30280` | `http://<NODE_IP>:<NodePort>/api/v1/shop` |
+| **Keycloak IAM** | `8080` | `30081` | `30181` | `30281` | `http://<NODE_IP>:<NodePort>` |
+| **Nginx Reverse Proxy** | `80` | `30090` | `30190` | `30290` | `http://<NODE_IP>:<NodePort>` (proxies to App) |
+| **Shop PostgreSQL** | `5432` | *Internal only* | *Internal only* | *Internal only* | `jdbc:postgresql://mam-<env>-shop-db:5432/shop_db` |
+| **Keycloak PostgreSQL** | `5432` | *Internal only* | *Internal only* | *Internal only* | `jdbc:postgresql://mam-<env>-keycloak-db:5432/keycloak` |
+| **Redis Cache** | `6379` | *Internal only* | *Internal only* | *Internal only* | `redis://mam-<env>-redis:6379` |
+| **HashiCorp Vault** | `8200` | `8200` | `8200` | `8200` | `https://192.168.56.10:8200` |
+
+### Local Standalone / Docker Compose Development Ports
+
+| Service | Host Port | Internal Container Port | Description / URL |
+|---------|-----------|-------------------------|-------------------|
+| **Spring Boot App** | `8090` | `8090` | `http://localhost:8090` |
+| **Keycloak IAM** | `8080` / `8443` | `8080` / `8443` | `http://localhost:8080` / `https://localhost:8443` |
+| **Shop Database (PostgreSQL)** | `5430` | `5432` | `localhost:5430` (`shop_db`) |
+| **Keycloak Database (PostgreSQL)** | `5435` | `5432` | `localhost:5435` (`keycloak`) |
+| **Shop Redis** | `6379` | `6379` | `localhost:6379` |
+| **SonarQube** | `9000` | `9000` | `http://localhost:9000` |
+| **Sentry** | `9001` | `9000` | `http://localhost:9001` |
+| **Grafana** | `3000` | `3000` | `http://localhost:3000` |
+| **Prometheus** | `9090` | `9090` | `http://localhost:9090` |
+| **Loki** | `3100` | `3100` | `http://localhost:3100` |
+| **Kibana** | `5601` | `5601` | `http://localhost:5601` |

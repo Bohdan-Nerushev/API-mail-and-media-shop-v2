@@ -66,10 +66,15 @@ redis:
 
 keycloak:
   image: quay.io/keycloak/keycloak:26.0.0
+  hostname: "192.168.56.10"
   auth:
     adminUser: admin
     adminPassword: "CHANGE_ME_IN_VAULT"
     clientSecret: "CHANGE_ME_IN_VAULT"
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30081
   resources:
     requests:
       cpu: 500m

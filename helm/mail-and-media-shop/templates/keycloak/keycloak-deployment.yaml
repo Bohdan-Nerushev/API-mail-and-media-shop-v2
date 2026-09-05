@@ -59,6 +59,12 @@ spec:
               value: "false"
             - name: KC_HEALTH_ENABLED
               value: "true"
+            {{- if .Values.keycloak.hostname }}
+            - name: KC_HOSTNAME
+              value: {{ .Values.keycloak.hostname | quote }}
+            - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+              value: "true"
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /health/live
