@@ -27,12 +27,14 @@ if ! groups bnerushev | grep -q docker; then
   sudo usermod -aG docker bnerushev
 fi
 
-if ! command -v k3s &>/dev/null; then
-  echo "Installing k3s..."
-  curl -sfL https://get.k3s.io | sh -s - \
-    --write-kubeconfig-mode 644 \
-    --disable traefik \
-    --kubelet-arg="max-pods=50"
+if ! command -v kubeadm &>/dev/null; then
+  echo "Installing kubeadm, kubelet, and kubectl..."
+  sudo mkdir -p /etc/apt/keyrings
+  curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+  sudo apt-get update
+  sudo apt-get install -y kubelet kubeadm kubectl
+  sudo apt-mark hold kubelet kubeadm kubectl
 fi
 
 if ! command -v helm &>/dev/null; then

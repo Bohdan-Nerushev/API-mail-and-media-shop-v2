@@ -157,7 +157,7 @@ Temporary Items
 
 # Linux trash folder which might appear on any partition or disk
 .Trash-*
-ToDo.md
+
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
 
@@ -233,3 +233,28 @@ certs/
 # Helm Charts
 /helm/*/charts/
 /helm/*/tmpcharts/
+
+### Terraform
+# Local .terraform directories containing downloaded providers/modules
+**/.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local secrets and environment variable files
+*.tfvars
+*.tfvars.local
+!*.tfvars.example
+
+

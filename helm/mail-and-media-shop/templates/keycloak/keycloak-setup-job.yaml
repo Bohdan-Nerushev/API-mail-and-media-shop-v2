@@ -4,6 +4,9 @@ kind: Job
 metadata:
   name: {{ include "mail-and-media-shop.fullname" . }}-keycloak-setup
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
   labels:
     {{- include "mail-and-media-shop.labels" . | nindent 4 }}
     app.kubernetes.io/component: keycloak-setup
@@ -22,8 +25,12 @@ spec:
             - sh
             - -c
             - |
-              apk add --no-cache bash curl jq postgresql-client
-              bash /scripts/2_keycloak_api_setup.sh
+              apk add --no-cache bash curl jq postgresql-client || (sleep 3 && apk add --no-cache bash curl jq postgresql-client) || true
+              if command -v bash >/dev/null 2>&1; then
+                exec bash /scripts/2_keycloak_api_setup.sh
+              else
+                exec sh /scripts/2_keycloak_api_setup.sh
+              fi
           env:
             - name: KC_URL
               value: "http://{{ include "mail-and-media-shop.keycloak.svcName" . }}:8080"
@@ -32,8 +39,8 @@ spec:
             - name: KC_ADMIN_PASS
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "mail-and-media-shop.fullname" . }}-keycloak-secret
-                  key: admin-password
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}KC_ADMIN_PASS{{ else }}admin-password{{ end }}
             - name: KC_REALM
               value: "mail-and-media-shop-realm"
             - name: KC_CLIENT_ID
@@ -41,18 +48,32 @@ spec:
             - name: KC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "mail-and-media-shop.fullname" . }}-keycloak-secret
-                  key: client-secret
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}KC_CLIENT_SECRET{{ else }}client-secret{{ end }}
             - name: KEYCLOAK_DB_USER
               value: {{ .Values.keycloakdb.auth.username | quote }}
             - name: KEYCLOAK_DB_NAME
               value: {{ .Values.keycloakdb.auth.database | quote }}
+            - name: KEYCLOAK_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-db-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}KEYCLOAK_DB_PASSWORD{{ else }}password{{ end }}
             - name: USER_NAME
-              value: "postman_user2"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}USER_NAME{{ else }}admin-password{{ end }}
             - name: USER_EMAIL
-              value: "postman2@example.com"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}USER_EMAIL{{ else }}admin-password{{ end }}
             - name: USER_PASSWORD
-              value: "password123"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}USER_PASSWORD{{ else }}admin-password{{ end }}
           volumeMounts:
             - name: scripts
               mountPath: /scripts

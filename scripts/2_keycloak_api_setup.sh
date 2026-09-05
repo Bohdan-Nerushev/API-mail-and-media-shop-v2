@@ -26,7 +26,7 @@ CLIENT_SECRET=${KC_CLIENT_SECRET:-""}
 
 USER_NAME=${USER_NAME:-"postman_user2"}
 USER_EMAIL=${USER_EMAIL:-"postman2@example.com"}
-USER_PASSWORD=${USER_PASSWORD:-"password123"}
+USER_PASSWORD=${USER_PASSWORD}
 
 echo "--------------------------------------------------"
 echo "🔧 KEYCLOAK AUTOMATIC CONFIGURATION"
@@ -79,7 +79,7 @@ until curl -s -f --max-time 5 "$KC_URL/realms/master/.well-known/openid-configur
   if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
     error_exit "Keycloak failed to become ready after $MAX_RETRIES attempts."
   fi
-  sleep 5
+  sleep 2
 done
 
 echo "✅ Keycloak is ready at $KC_URL"

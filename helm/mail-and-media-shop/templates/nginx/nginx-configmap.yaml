@@ -11,17 +11,16 @@ data:
         worker_connections 1024;
     }
     http {
-        upstream app_backend {
-            server {{ include "mail-and-media-shop.fullname" . }}:{{ .Values.app.service.port }};
-        }
         server {
             listen 80;
+            resolver 10.96.0.10 valid=10s ipv6=off;
             location /healthz {
                 access_log off;
                 return 200 "OK\n";
             }
             location / {
-                proxy_pass http://app_backend;
+                set $upstream_app http://{{ include "mail-and-media-shop.fullname" . }}:{{ .Values.app.service.port | default 8090 }};
+                proxy_pass $upstream_app;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

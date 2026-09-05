@@ -16,7 +16,7 @@ shopdb:
   auth:
     database: shop_db
     username: shop_user
-    password: "secret"
+    password: "CHANGE_ME_IN_VAULT"
   resources:
     requests:
       cpu: 150m
@@ -32,7 +32,7 @@ keycloakdb:
   auth:
     database: keycloak
     username: keycloak
-    password: "keycloak"
+    password: "CHANGE_ME_IN_VAULT"
   resources:
     requests:
       cpu: 100m
@@ -54,22 +54,30 @@ redis:
       memory: 128Mi
 
 keycloak:
-  image: quay.io/keycloak/keycloak:20.0.5
+  image: quay.io/keycloak/keycloak:26.7.3
+  hostname: "192.168.56.10"
   auth:
     adminUser: admin
-    adminPassword: "admin"
-    clientSecret: "2BcfsFrhh6WWwMQMhxfyjweZuLdWmfpr"
+    adminPassword: "CHANGE_ME_IN_VAULT"
+    clientSecret: "CHANGE_ME_IN_VAULT"
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30081
   resources:
     requests:
-      cpu: 250m
+      cpu: 500m
       memory: 384Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 1000m
+      memory: 1024Mi
 
 keycloakSetup:
   enabled: true
   image: docker:cli
+  userName: "CHANGE_ME_IN_VAULT"
+  userEmail: "CHANGE_ME_IN_VAULT"
+  userPassword: "CHANGE_ME_IN_VAULT"
 
 nginx:
   image: nginx:1.25-alpine
@@ -136,3 +144,14 @@ elasticsearchSetup:
 kibana:
   enabled: false
   image: docker.elastic.co/kibana/kibana:9.4.2
+
+vault:
+  enabled: true
+  server: "https://192.168.56.10:8200"
+  role: "mam-shop-role"
+  caProvider:
+    enabled: true
+    type: "ConfigMap"
+    name: "vault-ca"
+    key: "ca.crt"
+

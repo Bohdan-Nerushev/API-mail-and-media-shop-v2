@@ -1,0 +1,6 @@
+# Example Variable Assignments for Terraform Deployment
+kubeconfig_path = "~/.kube/config"
+environment     = "dev"
+namespace       = "mail-and-media-shop-dev"
+release_name    = "mail-and-media-shop"
+chart_path      = "../helm/mail-and-media-shop"
