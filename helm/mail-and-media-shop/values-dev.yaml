@@ -54,15 +54,20 @@ redis:
       memory: 128Mi
 
 keycloak:
-  image: quay.io/keycloak/keycloak:20.0.5
+  image: quay.io/keycloak/keycloak:26.7.3
+  hostname: "192.168.56.10"
   auth:
     adminUser: admin
     adminPassword: "CHANGE_ME_IN_VAULT"
     clientSecret: "CHANGE_ME_IN_VAULT"
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30081
   resources:
     requests:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 500m
+      memory: 384Mi
     limits:
       cpu: 1000m
       memory: 1024Mi

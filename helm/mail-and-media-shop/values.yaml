@@ -65,7 +65,7 @@ redis:
       memory: 128Mi
 
 keycloak:
-  image: quay.io/keycloak/keycloak:26.0.0
+  image: quay.io/keycloak/keycloak:26.7.3
   hostname: "192.168.56.10"
   auth:
     adminUser: admin
