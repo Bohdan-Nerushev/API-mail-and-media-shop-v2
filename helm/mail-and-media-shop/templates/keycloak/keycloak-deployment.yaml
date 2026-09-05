@@ -27,17 +27,13 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+            - name: management
+              containerPort: 9000
+              protocol: TCP
           env:
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               value: {{ .Values.keycloak.auth.adminUser | quote }}
             - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
-                  key: {{ if .Values.vault.enabled }}KC_ADMIN_PASS{{ else }}admin-password{{ end }}
-            - name: KEYCLOAK_ADMIN
-              value: {{ .Values.keycloak.auth.adminUser | quote }}
-            - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
@@ -59,24 +55,20 @@ spec:
               value: "false"
             - name: KC_HEALTH_ENABLED
               value: "true"
-            {{- if .Values.keycloak.hostname }}
             - name: KC_HOSTNAME
-              value: {{ .Values.keycloak.hostname | quote }}
-            - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
-              value: "true"
-            {{- end }}
+              value: {{ include "mail-and-media-shop.keycloak.svcName" . | quote }}
           livenessProbe:
             httpGet:
               path: /health/live
-              port: 8080
-            initialDelaySeconds: 60
+              port: 9000
+            initialDelaySeconds: 45
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 10
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: 8080
+              port: 9000
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 5

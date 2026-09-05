@@ -15,6 +15,13 @@ spec:
       labels:
         {{- include "mail-and-media-shop.selectorLabels" . | nindent 8 }}
     spec:
+      initContainers:
+        - name: wait-for-keycloak
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z -w 2 {{ include "mail-and-media-shop.keycloak.svcName" . }} 8080; do echo waiting for keycloak; sleep 3; done']
+        - name: wait-for-shop-db
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z -w 2 {{ include "mail-and-media-shop.shopdb.svcName" . }} 5432; do echo waiting for shop-db; sleep 2; done']
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"

@@ -26,13 +26,13 @@ resource "helm_release" "mail_and_media_shop" {
 
   # Wait for all resources to become ready before completing the apply operation
   wait            = true
-  timeout         = 600
+  timeout         = 900
   recreate_pods   = false
-  cleanup_on_fail = true
+  cleanup_on_fail = false
 
   force_update    = true
   reset_values    = true
-  atomic          = true
+  atomic          = false
   replace         = true
   upgrade_install = true
   # Inject custom values files into the Helm release
