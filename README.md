@@ -1533,19 +1533,25 @@ The project includes an automated script [`scripts/upload_github_secrets.sh`](fi
 
 ## Environment Ports Mapping (DEV, QA, LIVE)
 
-The table below outlines the network ports for services across local Docker/Compose setup and Kubernetes deployment environments (`dev`, `qa`, `live`).
+The table below outlines the network ports and endpoints for services across local Docker/Compose setup and Kubernetes deployment environments (`dev`, `qa`, `live`).
 
 ### Kubernetes Environments (`NodePort` & Internal `ClusterIP`)
 
 | Service Component | Internal Port (`ClusterIP`) | DEV External Port (`NodePort`) | QA External Port (`NodePort`) | LIVE External Port (`NodePort`) | Access Protocol / URL |
 |-------------------|-----------------------------|--------------------------------|-------------------------------|---------------------------------|-----------------------|
 | **Spring Boot App** | `8090` | `30080` | `30180` | `30280` | `http://<NODE_IP>:<NodePort>/api/v1/shop` |
-| **Keycloak IAM** | `8080` | `30081` | `30181` | `30281` | `http://<NODE_IP>:<NodePort>` |
+| **Keycloak IAM (v26.7.3)** | `8080` (HTTP) / `9000` (Mgmt) | `30081` | `30181` | `30281` | `http://<NODE_IP>:<NodePort>` (Admin Console & OAuth2) |
 | **Nginx Reverse Proxy** | `80` | `30090` | `30190` | `30290` | `http://<NODE_IP>:<NodePort>` (proxies to App) |
 | **Shop PostgreSQL** | `5432` | *Internal only* | *Internal only* | *Internal only* | `jdbc:postgresql://mam-<env>-shop-db:5432/shop_db` |
 | **Keycloak PostgreSQL** | `5432` | *Internal only* | *Internal only* | *Internal only* | `jdbc:postgresql://mam-<env>-keycloak-db:5432/keycloak` |
 | **Redis Cache** | `6379` | *Internal only* | *Internal only* | *Internal only* | `redis://mam-<env>-redis:6379` |
 | **HashiCorp Vault** | `8200` | `8200` | `8200` | `8200` | `https://192.168.56.10:8200` |
+
+> [!NOTE]
+> **Keycloak Architecture in Kubernetes:**
+> - **Internal Service Hostname:** `mam-<env>-mail-and-media-shop-keycloak:8080` (used by Spring Boot App for internal JWT issuer validation).
+> - **Management / Probes Port:** `9000` (used for `livenessProbe` `/health/live` and `readinessProbe` `/health/ready`).
+> - **External NodePort:** `30081` (DEV), `30181` (QA), `30281` (LIVE) for direct Admin Console access (`http://192.168.56.10:30081`).
 
 ### Local Standalone / Docker Compose Development Ports
 
