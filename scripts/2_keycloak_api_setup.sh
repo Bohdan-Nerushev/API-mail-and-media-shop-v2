@@ -79,7 +79,7 @@ until curl -s -f --max-time 5 "$KC_URL/realms/master/.well-known/openid-configur
   if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
     error_exit "Keycloak failed to become ready after $MAX_RETRIES attempts."
   fi
-  sleep 5
+  sleep 2
 done
 
 echo "✅ Keycloak is ready at $KC_URL"

@@ -72,10 +72,10 @@ keycloak:
     clientSecret: "CHANGE_ME_IN_VAULT"
   resources:
     requests:
-      cpu: 250m
+      cpu: 500m
       memory: 384Mi
     limits:
-      cpu: 500m
+      cpu: 1000m
       memory: 1024Mi
 
 keycloakSetup:

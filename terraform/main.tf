@@ -26,10 +26,15 @@ resource "helm_release" "mail_and_media_shop" {
 
   # Wait for all resources to become ready before completing the apply operation
   wait            = true
-  timeout         = 300
-  recreate_pods   = true
+  timeout         = 600
+  recreate_pods   = false
   cleanup_on_fail = true
 
+  force_update    = true
+  reset_values    = true
+  atomic          = true
+  replace         = true
+  upgrade_install = true
   # Inject custom values files into the Helm release
   # Primary values.yaml is always loaded first, followed by environment-specific values (e.g., values-dev.yaml)
   values = [

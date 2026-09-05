@@ -33,8 +33,8 @@ spec:
             - name: KC_BOOTSTRAP_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "mail-and-media-shop.fullname" . }}-keycloak-secret
-                  key: admin-password
+                  name: {{ if .Values.vault.enabled }}{{ include "mail-and-media-shop.fullname" . }}-vault-app-secret{{ else }}{{ include "mail-and-media-shop.fullname" . }}-keycloak-secret{{ end }}
+                  key: {{ if .Values.vault.enabled }}KC_ADMIN_PASS{{ else }}admin-password{{ end }}
             - name: KEYCLOAK_ADMIN
               value: {{ .Values.keycloak.auth.adminUser | quote }}
             - name: KEYCLOAK_ADMIN_PASSWORD

@@ -32,7 +32,7 @@ variable "chart_path" {
 
 variable "image_tag" {
   type        = string
-  default     = "latest"
+  default     = "app"
   description = "Docker image tag to deploy for the Spring Boot application"
 }
 
